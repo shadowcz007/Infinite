@@ -28,9 +28,16 @@ def create_image(text):
     images[0].save('sd/'+name)
     return name
 
-import easyocr
-reader = easyocr.Reader(['ch_sim','en'],gpu=False) # this needs to run only once to load the model into memory
-result = reader.readtext('jieping.png')
+# import easyocr
+# reader = easyocr.Reader(['ch_sim','en'],gpu=False) # this needs to run only once to load the model into memory
+# result = reader.readtext('jieping.png')
+import ppppocr
+
+def readtext():    
+    ocr = ppppocr.ppppOcr()
+    image_path = r'jieping.png'
+    dt_boxes, rec_res = ocr.ocr(image_path)
+    return rec_res
 
 pre_text='1'
 loading=False
@@ -44,21 +51,29 @@ def write_result():
     loading=True
 
     shotscreen()
-    result = reader.readtext('jieping.png')
+    result = readtext()
+
     res=[]
-    #print(result)
-    badwords=['OOUUC']
     for t in result:
-        text=t[1].replace(';',':')
-        #print(text)
-        texts=text.split(':')
+        text=t[0].replace(':','：')
+        texts=text.split('：')
+        
         if(len(texts)==1):
+            # print(texts)
             if(len(res)>0):
                 res[-1]+=texts[0]
             else:
                 res.append(texts[0])
         if(len(texts)==2):
-            res.append(texts[1])
+            # print(texts)
+            res.append(texts[0]+'[talk]'+texts[1])
+
+    texts=[]
+    for r in res:
+        if(len(r.split('[talk]'))==2):
+            texts.append(r.split('[talk]'))
+            print(r.split('[talk]'))
+    
     #print(2,len(res)>0, pre_text)
     if(len(res)>0 and res[-1].strip()!="" and res[-1]!=pre_text):
         #print(2)
