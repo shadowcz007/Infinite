@@ -80,12 +80,15 @@
             }).then(res => res.text()).then(res => {
                 res = res.split('[image]');
                 let text = res[0],
-                    imgurl = res[1]
+                    imgurl = res[1];
+
                 if (loading) return;
                 if (text == preText) {
                     window.count++;
                     return loading = false;
-                };
+                } else {
+                    window.count -= 20;
+                }
                 loading = true;
 
                 document.body.innerHTML = reply(text, 'sd/' + imgurl);
@@ -100,7 +103,7 @@
         setTimeout(() => setInterval(() => getUserReply(), 500), 2000);
 
         setInterval(() => {
-            if (window.count > 10) {
+            if (window.count > 20) {
                 randomGet();
                 window.count = 0;
             }
