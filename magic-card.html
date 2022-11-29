@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
-    <!-- https://codepen.io/gayane-gasparyan/pen/jOmaBQK -->
+<!-- https://codepen.io/gayane-gasparyan/pen/jOmaBQK -->
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -8,17 +9,16 @@
     <title>Magic Card</title>
     <style>
         @property --rotate {
-        syntax: "<angle>";
-        initial-value: 132deg;
-        inherits: false;
+            syntax: "<angle>";
+            initial-value: 132deg;
+            inherits: false;
         }
-
-        :root {
-        --card-height: 38vh;
-        --card-width: calc(var(--card-height) / 1.5);
+        
+         :root {
+            --card-height: 38vh;
+            --card-width: calc(var(--card-height) / 1.5);
         }
-
-
+        
         body {
             min-height: 100vh;
             background: #212534;
@@ -29,16 +29,16 @@
             padding-bottom: 2rem;
             box-sizing: border-box;
             text-align: center;
+            color: white;
         }
-
-
+        
         .magic-card {
             background: #191c29;
             width: var(--card-width);
             height: var(--card-height);
             padding: 3px;
             position: relative;
-            top:12px;
+            top: 12px;
             border-radius: 6px;
             justify-content: center;
             align-items: center;
@@ -50,20 +50,19 @@
             font-family: cursive;
             background-repeat: no-repeat;
             background-size: cover;
-
             display: flex;
             justify-content: flex-start;
             align-items: flex-end;
             font-size: 16px;
             font-weight: 800;
         }
-
-        .magic-card p{
+        
+        .magic-card p {
             -webkit-text-stroke: 0.5px #2f363a;
             font-weight: 800;
+            padding-left: 12px;
         }
-
- 
+        
         .hover {
             color: rgb(255 255 255);
             font-family: monospace;
@@ -71,41 +70,41 @@
             font-size: 1.2em;
             transition: color 1.5s;
         }
-        .hover:before, .hover:after {
+        
+        .hover:before,
+        .hover:after {
             animation: none!important;
             opacity: 0;
             transition: opacity 1s;
         }
-
+        
         .circle {
             width: var(--card-width)!important;
-            height:  var(--card-width)!important;
+            height: var(--card-width)!important;
             border-radius: 50% !important;
         }
-
+        
         .circle::before {
             width: var(--card-width)!important;
-            height:  var(--card-width)!important;
+            height: var(--card-width)!important;
             border-radius: 50% !important;
             top: -0.5% !important;
             left: -1%!important;
         }
-
+        
         .magic-card::before {
             content: "";
             width: 104%;
             height: 102%;
             border-radius: 8px;
-            background-image: linear-gradient(
-                var(--rotate)
-                , #5ddcff, #3c67e3 43%, #4e00c2);
-                position: absolute;
-                z-index: -1;
-                top: -1%;
-                left: -2%;
-                animation: spin 2.5s linear infinite;
+            background-image: linear-gradient( var(--rotate), #5ddcff, #3c67e3 43%, #4e00c2);
+            position: absolute;
+            z-index: -1;
+            top: -1%;
+            left: -2%;
+            animation: spin 2.5s linear infinite;
         }
-
+        
         .magic-card::after {
             position: absolute;
             content: "";
@@ -118,123 +117,113 @@
             margin: 0 auto;
             transform: scale(0.8);
             filter: blur(calc(var(--card-height) / 6));
-            background-image: linear-gradient(
-                var(--rotate)
-                , #5ddcff, #3c67e3 43%, #4e00c2);
-                opacity: 1;
+            background-image: linear-gradient( var(--rotate), #5ddcff, #3c67e3 43%, #4e00c2);
+            opacity: 1;
             transition: opacity .5s;
             animation: spin 2.5s linear infinite;
         }
-
-        @keyframes spin {
-        0% {
-            --rotate: 0deg;
-        }
-        100% {
-            --rotate: 360deg;
-        }
-        }
- 
         
-
-
-        /* bar */
-        #loading p{
-            color: white;
-    font-weight: 800;
-    font-family: monospace;
-    font-size: 5em;
-    line-height: 0;
-    position: absolute;
-    margin-top: -0.8em;
-    left: 0.5em;
+        @keyframes spin {
+            0% {
+                --rotate: 0deg;
+            }
+            100% {
+                --rotate: 360deg;
+            }
         }
-ul {
-  margin: 0;
-  height: 10px;
-  width: 100%;
-  /* position: absolute; */
-  /* top: 500px;; */
-  /* left: 200px; */
-  /* right: 0;
+        /* bar */
+        
+        #loading p {
+            color: white;
+            font-weight: 800;
+            font-family: monospace;
+            font-size: 4em;
+            line-height: 0;
+            position: absolute;
+            margin-top: -0.8em;
+            left: 2em;
+        }
+        
+        ul {
+            margin: 0;
+            height: 10px;
+            width: 100%;
+            /* position: absolute; */
+            /* top: 500px;; */
+            /* left: 200px; */
+            /* right: 0;
   bottom: 0; */
-  list-style: none;
-  margin-top: 44px;
-  /* padding: 0; */
-  /* transform: rotate(-90deg); */
-}
-
-li {
-  display: block;
-  float: left;
-  width: 56px;
-  height: 10px;
-  margin-right: 10px;
-}
-
-.light-step {
-  background: rgba(255,255,255,0.9);
-  box-shadow: inset 0px 0px 10px 2px rgba(117,182,255,0.5),
-                    0px 0px 20px rgba(117,182,214,0.5);
-}
-
-.dark-step {
-  box-shadow: inset 0px 0px 10px 1px rgba(117,182,255,0.4),
-                    0px 0px 20px rgba(117,182,255,0.1);
-}
-
-.current-step-3 {
-  animation: pulse 0.2s alternate infinite;
-}
-
-.current-step-2 {
-  animation: pulse 0.5s alternate infinite;
-}
-.current-step-1 {
-  animation: pulse-0 2.5s alternate infinite;
-}
-
-@keyframes pulse-0 {
-  0% {
-    background: rgba(255,255,255,1);
-    box-shadow: inset 0px 0px 10px 2px rgba(117,182,255,0.5),
-                      0px 0px 40px 2px rgba(105,135,255,1);
-  }
-  100% {
-    background: rgba(255,255,255,0.5);
-    box-shadow: inset 0px 0px 10px 2px rgba(117,182,255,0.5),
-                      0px 0px 30px 2px rgba(105,135,255,0.8);
-  }
-}
-
-@keyframes pulse {
-  0% {
-    background: rgba(255,255,255,1);
-    box-shadow: inset 0px 0px 10px 2px rgba(117,182,255,0.5),
-                      0px 0px 40px 2px rgba(105,135,255,1);
-  }
-  100% {
-    background: rgba(255,255,255,0);
-    box-shadow: inset 0px 0px 10px 2px rgba(117,182,255,0.5),
-                      0px 0px 30px 2px rgba(105,135,255,0.3);
-  }
-}
-  
-
+            list-style: none;
+            margin-top: 44px;
+            /* padding: 0; */
+            /* transform: rotate(-90deg); */
+        }
+        
+        li {
+            display: block;
+            float: left;
+            width: 56px;
+            height: 10px;
+            margin-right: 10px;
+        }
+        
+        .light-step {
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: inset 0px 0px 10px 2px rgba(117, 182, 255, 0.5), 0px 0px 20px rgba(117, 182, 214, 0.5);
+        }
+        
+        .dark-step {
+            box-shadow: inset 0px 0px 10px 1px rgba(117, 182, 255, 0.4), 0px 0px 20px rgba(117, 182, 255, 0.1);
+        }
+        
+        .current-step-3 {
+            animation: pulse 0.2s alternate infinite;
+        }
+        
+        .current-step-2 {
+            animation: pulse 0.5s alternate infinite;
+        }
+        
+        .current-step-1 {
+            animation: pulse-0 2.5s alternate infinite;
+        }
+        
+        @keyframes pulse-0 {
+            0% {
+                background: rgba(255, 255, 255, 1);
+                box-shadow: inset 0px 0px 10px 2px rgba(117, 182, 255, 0.5), 0px 0px 40px 2px rgba(105, 135, 255, 1);
+            }
+            100% {
+                background: rgba(255, 255, 255, 0.5);
+                box-shadow: inset 0px 0px 10px 2px rgba(117, 182, 255, 0.5), 0px 0px 30px 2px rgba(105, 135, 255, 0.8);
+            }
+        }
+        
+        @keyframes pulse {
+            0% {
+                background: rgba(255, 255, 255, 1);
+                box-shadow: inset 0px 0px 10px 2px rgba(117, 182, 255, 0.5), 0px 0px 40px 2px rgba(105, 135, 255, 1);
+            }
+            100% {
+                background: rgba(255, 255, 255, 0);
+                box-shadow: inset 0px 0px 10px 2px rgba(117, 182, 255, 0.5), 0px 0px 30px 2px rgba(105, 135, 255, 0.3);
+            }
+        }
     </style>
 </head>
+
 <body>
     <header>
         <h4>与AI共创世界杯</h4>
 
     </header>
     <div class="magic-card" id="card">
-       
+
         <p>Magic Card</p>
     </div>
 
     <div id="loading">
-        <ul >
+        <ul>
             <li class="li-1"></li>
             <li class="li-2"></li>
             <li class="li-3"></li>
@@ -243,82 +232,207 @@ li {
         </ul>
         <p></p>
     </div>
-    
+
 
     <script>
-        var card=document.querySelector('#card');
+        /* 用户选择的 */
+        window.userSelected = [];
+        /* 用户不要的图 */
+        window.badImageUrls = {};
 
-        function toggleCard(){
+        var card = document.querySelector('#card');
+        var textDom = document.querySelector('#card p');
+
+        function toggleCard() {
             card.classList.toggle('hover');
-            setTimeout(()=>card.classList.toggle('hover'),2000);
+            setTimeout(() => card.classList.toggle('hover'), 2000);
         }
 
-        var list=document.querySelector('#loading ul').children;
-        var loadingInfo=document.querySelector('#loading p');
-        
-        function next(){
-            let im=new Image();
-            im.src='https://i.pinimg.com/564x/41/ad/c6/41adc609dece3d8cdfe8e8415b8a6a0e.jpg';
-            im.onload=()=>{
-                card.style.backgroundImage="url(https://i.pinimg.com/564x/41/ad/c6/41adc609dece3d8cdfe8e8415b8a6a0e.jpg)";
+        var loadingDom = document.querySelector('#loading');
+        var list = document.querySelector('#loading ul').children;
+        var loadingInfo = document.querySelector('#loading p');
+
+        function displayLoading(d = 'none') {
+            loadingDom.style.display = d;
+        }
+
+        function next(url, text, isCountdown = true) {
+            window.url = url;
+            let im = new Image();
+            im.src = url;
+            textDom.innerText = text;
+            im.onload = () => {
+                window.isPlay = true;
+                /* console.log('play', isCountdown) */
+                card.style.backgroundImage = `url(${url})`;
+
+                displayLoading(isCountdown ? 'block' : 'none');
                 toggleCard();
                 countStart();
                 countdown();
+
             }
         }
 
 
-        function countStart(){
-            Array.from(list,u=>{
-                u.className='light-step';
+        function countStart() {
+            Array.from(list, u => {
+                u.className = 'light-step';
                 /* u.classList.toggle('dark-step'); */
             });
 
-            window.time=1000;
-            window.countdownTime=100;
-            countdown();
-            /* window.countdownId=setInterval(countdown,window.countdownTime); */
+            window.time = 1000;
+            window.maxTime = 1001;
+            window.countdownTime = 100;
 
         };
 
-        function countup(){
-            window.time+=120;
-        }
-        
-        function countdown(){
-            window.time-=0.2;
-            if(window.time<=0){
-                /* clearInterval(window.countdownId); */
-                console.log('next')
-                card.style.backgroundImage="none";
-                loadingInfo.innerText="";
-                Array.from(list,u=>{
-                    u.className='dark-step';
-                    /* u.classList.toggle('dark-step'); */
-                });
-                return;
+        function countup() {
+            window.time += 120;
+            if (window.time > window.maxTime) {
+
+                let item = window.items.filter(item => item.url == window.url)[0];
+                /* console.log(items) */
+                if (item) {
+                    window.userSelected.push(item);
+                    window.items = window.items.filter(item => item.url != window.url);
+                    window.badImageUrls[window.url] = 1;
+
+                };
+                reset();
+
+                console.log('good', window.userSelected)
+
             }
-            let i=list.length*window.time/1000;
-            let element=list[Math.ceil(i)-1];
-            
-            Array.from(list,(u,index)=>{
-                if(index>Math.ceil(i)-1){
-                    u.className='dark-step';
-                }else{
-                    u.className='light-step';
+        }
+
+        function reset() {
+            card.style.backgroundImage = "none";
+            loadingInfo.innerText = "";
+            Array.from(list, u => {
+                u.className = 'dark-step';
+                /* u.classList.toggle('dark-step'); */
+            });
+
+            window.isPlay = false;
+            /* 检查有没有新的图 */
+            getUserReply().then(() => {
+                loading = false;
+                randomGet();
+            })
+        }
+
+        function countdown() {
+            if (!window.isPlay) return;
+            window.time -= 0.2;
+            if (window.time <= 0) {
+                /* 移除 */
+                window.items = window.items.filter(item => item.url != window.url);
+                window.badImageUrls[window.url] = 1;
+                /* console.log('next') */
+                reset();
+                return
+            };
+            let i = list.length * window.time / 1000;
+            let element = list[Math.ceil(i) - 1];
+
+            Array.from(list, (u, index) => {
+                if (index > Math.ceil(i) - 1) {
+                    u.className = 'dark-step';
+                } else {
+                    u.className = 'light-step';
                 }
             });
-            
-            let step=Math.min(2,Math.max(0,Math.ceil((Math.ceil(i)-i)*10/3)-1));
-            element.className=`light-step current-step-${step+1}`;
-            /* console.log(Math.ceil(100*window.time/1000)); */
-            loadingInfo.innerText=Math.ceil(100*window.time/1000);
 
+            let step = Math.min(2, Math.max(0, Math.ceil((Math.ceil(i) - i) * 10 / 3) - 1));
+            if (element) {
+                element.className = `light-step current-step-${step+1}`;
+                /* console.log(Math.ceil(100*window.time/1000)); */
+                loadingInfo.innerText = Math.ceil(100 * window.time / 1000);
+            }
             window.requestAnimationFrame(countdown);
         }
-
-        
     </script>
-    
+    <script>
+        window.items = [];
+
+        const reply = (text, url, isPush = true, isCountdown = true) => {
+            /* console.log(isPush, isCountdown, 'reply') */
+            if (window.isPlay) return;
+
+            next(url, text, isCountdown);
+        }
+
+        function randomGet() {
+
+            if (window.items.length > 0) {
+                let {
+                    text,
+                    url
+                } = window.items[Math.ceil(Math.random() * window.items.length) - 1];
+                reply(text, url, false);
+
+            } else if (window.userSelected.length > 0) {
+                /* 当没有新图的时候 */
+                let {
+                    text,
+                    url
+                } = window.userSelected[Math.ceil(Math.random() * window.userSelected.length) - 1];
+                reply(text, url, false, false);
+
+            }
+            return
+        }
+
+        window.loading = false;
+        window.preText = '';
+
+
+        /* TODO bug */
+        function getUserReply() {
+
+            return new Promise((result, rej) => {
+                fetch('sd/text.txt', {
+                    cache: 'no-cache'
+                }).then(res => res.text()).then(res => {
+                    res = res.split('[image]');
+                    const text = res[0],
+                        imgurl = res[1];
+                    const url = 'sd/' + imgurl;
+
+                    if (!window.badImageUrls[url] && window.items.filter(t => t.url == url).length == 0) {
+                        window.items.push({
+                            text,
+                            url
+                        });
+                    }
+
+                    if (loading || window.badImageUrls[url]) {
+                        loading = false;
+                        result();
+                        return;
+                    } else {
+                        loading = true;
+                        reply(text, url, true, true);
+                        /* console.log(text, 'reply') */
+                        /* setTimeout(() => loading = false, 1500); */
+                        result();
+                    }
+                });
+            })
+
+        };
+
+        setTimeout(() => setInterval(async() => {
+            await getUserReply()
+            loading = false
+        }, 500), 2000);
+
+        setInterval(() => {
+            randomGet();
+        }, 3000)
+    </script>
+
 </body>
+
 </html>
