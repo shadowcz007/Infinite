@@ -215,7 +215,7 @@
 <body>
     <header>
         <h4>与AI共创世界杯</h4>
-
+        <p>0</p>
     </header>
     <div class="magic-card" id="card">
 
@@ -235,13 +235,20 @@
 
 
     <script>
+
+        let _SPEED=0.2;
+
         /* 用户选择的 */
         window.userSelected = [];
-        /* 用户不要的图 */
-        window.badImageUrls = {};
+        /* 所有图，保证不重复 */
+        window.imageUrlsKey = {};
+
+        /* 用户投票 */
+        window.userFeedbackCount=10;
 
         var card = document.querySelector('#card');
         var textDom = document.querySelector('#card p');
+        var userSelectCountDom =document.querySelector('header p');
 
         function toggleCard() {
             card.classList.toggle('hover');
@@ -257,7 +264,9 @@
         }
 
         function next(url, text, isCountdown = true) {
-            window.url = url;
+            
+            /* window.url = url; */
+
             let im = new Image();
             im.src = url;
             textDom.innerText = text;
@@ -269,7 +278,7 @@
                 displayLoading(isCountdown ? 'block' : 'none');
                 toggleCard();
                 countStart();
-                countdown();
+                /* countdown(); */
 
             }
         }
@@ -288,51 +297,62 @@
         };
 
         function countup() {
-            window.time += 120;
-            if (window.time > window.maxTime) {
+            if(window.time>0 && window.current){
+                console.log('countup',window.userFeedbackCount*10);
+                window.time += window.userFeedbackCount*10;
+                pushUserSelected();
+            }
+        }
 
-                let item = window.items.filter(item => item.url == window.url)[0];
+        function pushUserSelected(){
+            if (window.time > window.maxTime) {
+                let item=window.current;
+                /* let item = window.items.filter(item => item.url == window.url)[0]; */
                 /* console.log(items) */
                 if (item) {
                     window.userSelected.push(item);
-                    window.items = window.items.filter(item => item.url != window.url);
-                    window.badImageUrls[window.url] = 1;
-
+                    /* 更新ui */
+                    userSelectCountDom.innerText=window.userSelected.length;
+                    /* window.items = [...window.items.filter(item => item.url != window.url)]; */
+                    /* window.imageUrlsKey[window.url] = 1; */
+                    window.current=null;
                 };
                 reset();
 
-                console.log('good', window.userSelected)
+                console.log('用户投票#', window.userSelected.length)
 
             }
         }
 
         function reset() {
+            /* if(!window.isPlay)return; */
+
             card.style.backgroundImage = "none";
             loadingInfo.innerText = "";
             Array.from(list, u => {
                 u.className = 'dark-step';
                 /* u.classList.toggle('dark-step'); */
             });
-
             window.isPlay = false;
-            /* 检查有没有新的图 */
-            getUserReply().then(() => {
-                loading = false;
-                randomGet();
-            })
+            window.userFeedbackCount=10;
+            /* 显示 */
+            randomGet();
         }
 
         function countdown() {
-            if (!window.isPlay) return;
-            window.time -= 0.2;
+            console.log('countdown',window.isPlay)
+            if (!window.isPlay) return window.requestAnimationFrame(countdown);;
+            window.time -= _SPEED;
+            /* 倒计时，销毁 */
             if (window.time <= 0) {
                 /* 移除 */
-                window.items = window.items.filter(item => item.url != window.url);
-                window.badImageUrls[window.url] = 1;
+                /* window.items = [...window.items.filter(item => item.url != window.url)]; */
+                /* window.imageUrlsKey[window.url] = 1; */
                 /* console.log('next') */
                 reset();
-                return
+                return window.requestAnimationFrame(countdown);
             };
+
             let i = list.length * window.time / 1000;
             let element = list[Math.ceil(i) - 1];
 
@@ -356,29 +376,34 @@
     <script>
         window.items = [];
 
-        const reply = (text, url, isPush = true, isCountdown = true) => {
-            /* console.log(isPush, isCountdown, 'reply') */
+        const reply = (text, url,isCountdown = true) => {
             if (window.isPlay) return;
-
             next(url, text, isCountdown);
         }
 
+        /*  */
         function randomGet() {
-
+            if(window.isPlay) return;
+            console.log('randomGet',window.items.length,window.userSelected.length,window.isPlay)
             if (window.items.length > 0) {
-                let {
-                    text,
-                    url
-                } = window.items[Math.ceil(Math.random() * window.items.length) - 1];
-                reply(text, url, false);
+
+                /* 按时间排序 */
+                window.items=[...window.items.sort((a,b)=>a.time-b.time)];
+
+                window.current = window.items.pop();
+
+                reply(window.current.text, window.current.url);
 
             } else if (window.userSelected.length > 0) {
+
+                window.current=null;
+
                 /* 当没有新图的时候 */
                 let {
                     text,
                     url
                 } = window.userSelected[Math.ceil(Math.random() * window.userSelected.length) - 1];
-                reply(text, url, false, false);
+                reply(text, url, false);
 
             }
             return
@@ -390,47 +415,63 @@
 
         /* TODO bug */
         function getUserReply() {
-
+            const dataUrl='sd/images.json';
             return new Promise((result, rej) => {
-                fetch('sd/text.txt', {
+                fetch(dataUrl, {
                     cache: 'no-cache'
-                }).then(res => res.text()).then(res => {
-                    res = res.split('[image]');
-                    const text = res[0],
-                        imgurl = res[1];
-                    const url = 'sd/' + imgurl;
-
-                    if (!window.badImageUrls[url] && window.items.filter(t => t.url == url).length == 0) {
-                        window.items.push({
-                            text,
-                            url
-                        });
-                    }
-
-                    if (loading || window.badImageUrls[url]) {
-                        loading = false;
-                        result();
-                        return;
-                    } else {
-                        loading = true;
-                        reply(text, url, true, true);
-                        /* console.log(text, 'reply') */
-                        /* setTimeout(() => loading = false, 1500); */
-                        result();
+                }).then(res => res.json()).then(res => {
+                    
+                    const text = res.input,images=Array.from(res.images,i=>'sd/'+i);
+                   
+                    for(let url of images){
+                        /* 确定是一张新图 */
+                        if (!window.imageUrlsKey[url]) {
+                            console.log('新图#',window.items.length);
+                            window.imageUrlsKey[url]=1;
+                            window.items.push({
+                                text,
+                                url,
+                                time:(new Date()).getTime()
+                            });
+                        };
                     }
                 });
             })
 
         };
 
-        setTimeout(() => setInterval(async() => {
-            await getUserReply()
-            loading = false
-        }, 500), 2000);
+
+        function getUserFeedBack(){
+            const dataUrl='sd/user.json';
+            return new Promise((result, rej) => {
+                fetch(dataUrl, {
+                    cache: 'no-cache'
+                }).then(res => res.json()).then(res => {
+                    const {count,input}=res;
+                    if(window.current&&window.current.text==input && count>window.userFeedbackCount){
+                        window.userFeedbackCount=count;
+                        countup();
+                    }
+                });
+            })
+        }
+
+        /* 独立的异步，用于投票 */
+        setTimeout(() => setInterval(() => getUserFeedBack(), 500), 2000);
+
+
+        /* 独立的异步，用来更新图片 */
+        setTimeout(() => setInterval(() => getUserReply(), 500), 2000);
+
+        /* 用来更新进度 */
+        countdown();
 
         setInterval(() => {
+            if (window.isPlay) return;
             randomGet();
-        }, 3000)
+        }, 3000);
+
+
     </script>
 
 </body>
