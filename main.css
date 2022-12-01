@@ -1,0 +1,16 @@
+
+#screen_image{
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4px;
+    outline: 0.1px solid #e1e1e1;
+}
+
+
+#screen_image img{
+    width: fit-content;
+    max-height: 800px;
+    max-width: 120px;
+}
