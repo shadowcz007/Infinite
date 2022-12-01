@@ -2,17 +2,14 @@ import gradio as gr
 
 
 import random
-from PIL import ImageGrab
+from PIL import ImageGrab,Image
 import hashlib
 import time
 import json
 
 STYLE_PROMPTS=[
-    #',by Cyril Rolando,high detailed drawing,art station, concept art,illustration, 4k detailed post processing, fairy cgsociety,8k,highly detailed',
-    '，在外太空，拿着足球，脚踢足球，足球，足球!!!!!!,人物，肖像画，高细节表现力，blender渲染的概念艺术图，超清，写实照片，超现实主义，梦幻唯美，高清的图像,8k detail，脸部刻画清晰，锐化',
-    '，长城上，看足球比赛，脚踢足球，足球，足球!!!!!!,人物，肖像画，高细节表现力，blender渲染的概念艺术图，超清，超现实主义，高清的图像,8k detail，脸部刻画清晰，锐化,写实摄影作品',
-    # ', hyper realistic, 8k, epic composition, cinematic, octane render, artstation landscape vista photography by Carr Clifton & Galen Rowell, 16K resolution, Landscape veduta photo by Dustin Lefevre & tdraw, 8k resolution, detailed landscape painting by Ivan Shishkin, DeviantArt, Flickr, rendered in Enscape, Miyazaki, Nausicaa Ghibli, Breath of The Wild, 4k detailed post processing, artstation, rendering by octane, unreal engine',
-    # ', art station, landscape, concept art, illustration, highly detailed artwork cinematic, hyper realistic painting'
+   '，在外太空，拿着足球，脚踢足球，足球，足球!!!!!!,人物，肖像画，高细节表现力，blender渲染的概念艺术图，超清，写实照片，超现实主义，梦幻唯美，高清的图像,8k detail，脸部刻画清晰，锐化',
+    '，长城上，看足球比赛，脚踢足球，足球，足球!!!!!!,人物，肖像画，高细节表现力，blender渲染的概念艺术图，超清，超现实主义，高清的图像,8k detail，脸部刻画清晰，锐化,写实摄影作品'
     ]
 
 SCREE_PATH='jieping.png'
@@ -27,14 +24,14 @@ global pipe_text2img
 global pipe_img2img
 
 # 百度的ocr
-# import ppppocr
+import ppppocr
 def init_ocr():
     global ocr
     ocr = ppppocr.ppppOcr(model='server')
 
 
 # huggingface的sd库
-from diffusers import StableDiffusionPipeline
+from diffusers import StableDiffusionPipeline,StableDiffusionImg2ImgPipeline
 import torch
 
 device="cuda"
@@ -94,7 +91,7 @@ keywords=init_keywords(keywords)
 
 
 def random_prompt_style():
-    i=random.randint(0,len(STYLE_PROMPTS))
+    i=random.randint(0,len(STYLE_PROMPTS)-1)
     return ''+STYLE_PROMPTS[i]
 
 #截屏
@@ -124,8 +121,8 @@ def md5(t):
 
 
 def create_image(text):
-    global sd_zh_pipe
-    images=sd_zh_pipe(text+random_prompt_style(), guidance_scale=10.0,num_images_per_prompt=1).images
+    global pipe_text2img
+    images=pipe_text2img(text+random_prompt_style(), guidance_scale=10.0,num_images_per_prompt=1).images
     name='result_'+text+'_'+str(int(time.time()))
     name=md5(name)+'.png'
     images[0].save('sd/'+name)
@@ -157,24 +154,28 @@ def get_user_input():
 
     res=[]
     for t in result:
-        text=t[0].replace(':','：')
-        texts=text.split('：')
-        
-        if(len(texts)==1):
-            # print(texts)
-            if(len(res)>0):
-                res[-1]+=texts[0]
-            else:
-                res.append(texts[0])
-        if(len(texts)==2):
-            # print(texts)
-            res.append(texts[0]+'[talk]'+texts[1])
-
-    texts=[]
-    for r in res:
-        if(len(r.split('[talk]'))==2):
-            texts.append(r.split('[talk]')[1]) 
-    return texts,im 
+        text=t[0]
+        if text!='主播':
+            text=text.replace(':','：')
+            texts=text.split('：')
+            if len(texts)==1:
+                if(len(res)>0):
+                    res[-1]+=','+texts[0]
+            elif len(texts)==2:
+                if texts[1]=='':
+                    res.append(1)
+                else:
+                    num=texts[1]
+                    try:
+                        num=int(num)
+                    except:
+                        num=None
+                    if num!=None:
+                        res.append(num)
+                    else:
+                        res.append(texts[1])
+            
+    return res,im 
 
 
 def write_user_feedback(texts):
@@ -226,6 +227,8 @@ def write_result():
         pre_text=input_text
 
         return im,result_images
+    else:
+        return create_more()
 
 def create_more():
     global pre_text
@@ -244,12 +247,22 @@ def create_more():
 def count_user_feedback(keyword):
     texts,im =get_user_input()
     print('count_user_feedback::',keyword,texts)
-    return texts
+    is_count=False
+    count=0
+    for t in texts:
+        if is_count and isinstance(t, int):
+            count+=t
+        if keyword==t:
+            is_count=True
+    return count
 
 
 def infer_text2img(prompt, guide, steps, width, height, image_in, strength):
+    global pipe_text2img
+    global pipe_img2img
     if image_in is not None:
         init_image = image_in.convert("RGB").resize((width, height))
+        print(init_image,width, height)
         output = pipe_img2img(prompt, init_image=init_image, strength=strength, width=width, height=height, guidance_scale=guide, num_inference_steps=steps)
     else:
         output = pipe_text2img(prompt, width=width, height=height, guidance_scale=guide, num_inference_steps=steps,)
@@ -274,6 +287,8 @@ def infer_inpaint(prompt, guide, steps, width, height, image_in):
 #         print('error')
 #     time.sleep(2)
 
+init_ocr()
+init_sd()
 
 
 with gr.Blocks(css="main.css") as demo:
@@ -314,6 +329,7 @@ with gr.Blocks(css="main.css") as demo:
             # img2img_prompt = gr.Textbox(label = '提示词(prompt)')
             # img2img_btn = gr.Button("图像编辑(Inpaint)")
         submit_btn.click(fn = infer_text2img, inputs = [prompt, guide, steps, width, height, image_in, strength], outputs = image_out)
+
         shotscreen_btn.click(fn=shotscreen_setup,inputs =[screen_area],
         outputs=screen_image,
         api_name="shotscreen")
