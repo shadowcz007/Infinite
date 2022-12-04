@@ -1,7 +1,7 @@
 import random
 import hashlib
 import time
-import json,os
+import json,os,io,base64
 
 from PIL import ImageGrab,Image
 import gradio as gr
@@ -98,12 +98,28 @@ def write_json(a,file_path):
     f2.close()
     return
 
+def image_to_base64(image):
+    # 输入为PIL读取的图片，输出为base64格式
+    byte_data = io.BytesIO()# 创建一个字节流管道
+    image.save(byte_data, format="JPEG")# 将图片数据存入字节流管道
+    byte_data = byte_data.getvalue()# 从字节流管道中获取二进制
+    base64_str = base64.b64encode(byte_data).decode("ascii")# 二进制转base64
+    return base64_str
 
-def create_http_server():
+def base64_to_image(base64_str):
+    # 输入为base64格式字符串，输出为PIL格式图片
+    byte_data = base64.b64decode(base64_str) # base64转二进制
+    image = Image.open(io.BytesIO(byte_data)) # 将二进制转为PIL格式图片
+    return image
+    
+
+
+def create_http_server(style_prompt,guide, steps, width, height, image_in, strength):
     global http_server
     if http_server==None:
         http_server=os.popen('python3 -m http.server')
         os.popen('start http://localhost:8000/magic-card.html')
+    return update_pipe_opts(style_prompt,guide, steps, width, height, image_in, strength)
 
 def stop_http_server():
     global http_server
@@ -151,7 +167,7 @@ def get_user_input():
                     text=text.replace(':','：')
                     texts=text.split('：')
                     if len(texts)==1:
-                        if(len(res)>0):
+                        if(len(res)>0 and isinstance(res[-1],str)):
                             res[-1]+=','+texts[0]
                     elif len(texts)==2:
                         if texts[1]=='':
@@ -178,11 +194,19 @@ def get_user_input_and_prompt():
     texts,im=get_user_input()
 
     # 避免 1 作为prompt
-    # print('==========',texts)
-    if(len(texts)>0 and texts[-1].strip()!="" and texts[-1].strip()!="1" and texts[-1]!=pre_text):
-        pre_text=texts[-1].strip()
+    res=[]
+    for t in texts:
+        try:
+            t=int(t)
+        except:
+            t=t.strip()
+        if isinstance(t,str):
+            res.append(t)
+    print('==========',res)
+    if(len(res)>0 and isinstance(res[-1],str) and res[-1].strip()!="" and res[-1].strip()!="1" and res[-1]!=pre_text):
+        pre_text=res[-1].strip()
       
-    return im,pre_text
+    return pre_text,im
    
 
 
@@ -199,10 +223,37 @@ def count_user_feedback(keyword):
             is_count=True
     return count
 
+def infer_text2img_for_auto(prompt):
+    global pipe_opts
+    im=infer_text2img(prompt,
+    pipe_opts["style_prompt"],
+    pipe_opts["guide"],
+    pipe_opts["steps"],
+    pipe_opts["width"],
+    pipe_opts["height"],
+    base64_to_image(pipe_opts["image_in"]),
+    pipe_opts["strength"]
+    )
+    return im
+
+def update_pipe_opts(style_prompt,guide, steps, width, height, image_in, strength):
+    global pipe_opts
+    # print(image_in)
+    pipe_opts={
+        "style_prompt":style_prompt,
+        "guide":guide,
+        "steps":steps,
+        "width":width,
+        "height":height,
+        "image_in":image_to_base64(image_in),
+        "strength":strength
+    }
+    return pipe_opts
 
 def infer_text2img(prompt, style_prompt,guide, steps, width, height, image_in, strength):
     global pipe_text2img
     global pipe_img2img
+
     if style_prompt!=None:
         prompt=prompt+','+style_prompt
     if pipe_text2img==None:
@@ -253,6 +304,7 @@ with gr.Blocks(css="main.css") as demo:
                 shotscreen_btn=gr.Button("截图区域配置")
                 shotscreen_and_ocr_btn=gr.Button("截图&OCR")
                 http_server_btn=gr.Button("http服务")
+                update_pipe_opts_btn=gr.Button('更新参数')
             
             with gr.Row(scale=0.5 ):
                 guide = gr.Slider(2, 15, value = 7, label = '文本引导强度(guidance scale)')
@@ -271,7 +323,9 @@ with gr.Blocks(css="main.css") as demo:
             
             get_user_input_and_prompt_btn=gr.Button("截屏提取最新回复作为输入")
          
-            submit_btn = gr.Button("根据prompt生成图像")
+            use_pipe_opts_btn = gr.Button("根据设定的参数生成图像")
+
+            submit_btn = gr.Button("根据prompt和参数生成图像")
             shotscreen_and_ocr_and_match_keyword_btn=gr.Button("截屏计算投票")
             
                 
@@ -287,7 +341,17 @@ with gr.Blocks(css="main.css") as demo:
         #     inpaint_btn = gr.Button("图像编辑(Inpaint)")
             # img2img_prompt = gr.Textbox(label = '提示词(prompt)')
             # img2img_btn = gr.Button("图像编辑(Inpaint)")
-        submit_btn.click(fn = infer_text2img, inputs = [keyword,style_input, guide, steps, width, height, image_in, strength], outputs = image_out)
+        use_pipe_opts_btn.click(fn = infer_text2img_for_auto, 
+        inputs =keyword, 
+        outputs = image_out,api_name="infer_text2img_for_auto")
+
+        submit_btn.click(fn = infer_text2img, 
+        inputs = [keyword,style_input, guide, steps, width, height, image_in, strength], 
+        outputs = image_out,api_name="infer_text2img")
+
+        update_pipe_opts_btn.click(fn = update_pipe_opts, 
+        inputs = [style_input, guide, steps, width, height, image_in, strength], 
+        outputs = json_out)
 
         shotscreen_btn.click(fn=shotscreen_setup,inputs =[screen_x,screen_y,screen_width,screen_height],
         outputs=image_out,
@@ -295,13 +359,15 @@ with gr.Blocks(css="main.css") as demo:
 
         shotscreen_and_ocr_btn.click(fn=get_user_input,
         outputs=[json_out,image_out],
-        api_name="shotscreen")
+        api_name="shotscreen_ocr")
 
-        http_server_btn.click(fn=create_http_server)
+        http_server_btn.click(fn=create_http_server,
+        inputs = [style_input, guide, steps, width, height, image_in, strength], 
+        outputs = json_out)
 
         get_user_input_and_prompt_btn.click(fn=get_user_input_and_prompt,
-        outputs=[image_out,keyword],
-        api_name="get_user_input_and_createImage")
+        outputs=[keyword,image_out],
+        api_name="get_user_input_and_prompt")
 
         shotscreen_and_ocr_and_match_keyword_btn.click(fn=count_user_feedback,
         inputs =[keyword],
