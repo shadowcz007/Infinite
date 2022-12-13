@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My</title>
+    <script src="./assets/js/model-viewer-umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/howler@2.2.3/dist/howler.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/RecordRTC/5.6.2/RecordRTC.js"></script>
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        
+        model-viewer {
+            width: 100%;
+            height: 100vh;
+        }
+    </style>
+</head>
+
+<body>
+
+    <model-viewer src="./assets/model/base-shadow.glb" ar ar-modes="webxr scene-viewer quick-look" camera-controls poster="./assets/image/poster.webp" shadow-intensity="1" autoplay>
+        <button class="Hotspot" slot="hotspot-1" data-position="0.16843323423898407m 1.4220791200168543m -0.007215726788095456m" data-normal="-0.3923983733134677m 0.025428432508705207m 0.9194438054830186m" data-visibility-attribute="visible">
+            <div class="HotspotAnnotation">hi</div>
+        </button>
+        <div class="progress-bar hide" slot="progress-bar">
+            <div class="update-bar"></div>
+        </div>
+        <button slot="ar-button" id="ar-button">
+            View in your space
+        </button>
+        <div id="ar-prompt">
+            <img src="https://modelviewer.dev/shared-assets/icons/hand.png">
+        </div>
+    </model-viewer>
+
+    <!--     
+
+    <model-viewer src="./assets/model/base-shadow.glb" ar ar-modes="webxr scene-viewer quick-look" camera-controls 
+    poster="./assets/image/poster.webp" shadow-intensity="1" autoplay>
+        <div class="progress-bar hide" slot="progress-bar">
+            <div class="update-bar"></div>
+        </div>
+        <button slot="ar-button" id="ar-button">
+            View in your space
+        </button>
+        <div id="ar-prompt">
+            <img src="https://modelviewer.dev/shared-assets/icons/hand.png">
+        </div>
+    </model-viewer> -->
+    <script>
+        initHuman().then(w => window.human = w);
+
+        async function listening() {
+            let stream = await navigator.mediaDevices.getUserMedia({
+                video: false,
+                audio: true
+            });
+            let recorder = new RecordRTCPromisesHandler(stream, {
+                type: 'audio'
+            });
+            recorder.startRecording();
+
+            const sleep = m => new Promise(r => setTimeout(r, m));
+            await sleep(3000);
+
+            await recorder.stopRecording();
+            let base64 = await recorder.getDataURL()
+                // invokeSaveAsDialog(blob);
+            console.log(recorder)
+            return base64
+        }
+
+        function uploadAudioFile() {
+            let input = document.createElement('input')
+            input.type = 'file'
+            input.click();
+            return new Promise((res, rej) => {
+                input.addEventListener('change', e => {
+                    let reader = new FileReader();
+                    reader.readAsDataURL(input.files[0]);
+                    reader.onloadend = e => {
+                        res(e.target.result)
+                    }
+                })
+            })
+
+        }
+
+        function loadAudioFile(base64) {
+            return new Promise((res, rej) => {
+                let sound = new Howl({
+                    src: [base64]
+                });
+                console.log(sound.state())
+                if (sound.state() == 'loaded') {
+                    res(sound);
+                } else {
+                    // Clear listener after first call.
+                    sound.once('load', function() {
+                        // console.log('load')
+                        // sound.play();
+                        res(sound);
+                    });
+                }
+
+
+            });
+
+        }
+
+        function recognitionUserInput() {
+            if (window.recognition == undefined) {
+                // 创建一个SpeechRecognition对象
+                window.recognition = new webkitSpeechRecognition();
+
+                // 配置设置以使每次识别都返回连续结果
+                window.recognition.continuous = true;
+                window.recognition.maxAlternatives = 1;
+                // 配置应返回临时结果的设置
+                window.recognition.interimResults = false;
+                window.recognition.lang = 'zh';
+
+                window.recognition.start();
+                // 正确识别单词或短语时的事件处理程序
+                window.recognition.onresult = function(event) {
+
+                    let text = event.results[0][0].transcript;
+                    console.log(window.humanIsPlay, event.results[0][0].transcript);
+                    // window.recognition.stop();
+                    if (!window.humanIsPlay) {
+                        window.humanIsPlay = true;
+                        window.recognition.stop();
+                        userInputByText(text).then(() => {
+                            // window.recognition.start();
+                            window.humanIsPlay = false;
+                            window.recognition.start();
+                        })
+                    }
+
+                };
+
+                // window.recognition.onspeechend = function() {
+                //     window.recognition.stop();
+                // }
+            };
+
+        }
+
+        function userInputByText(text) {
+            return new Promise((res, rej) => {
+                fetchUserInputFromText(text).then(data => {
+
+                    loadAudioFile(data[1].base64).then(sound => {
+                        window.sound = sound;
+                        window.sound.play();
+                        window.sound.once('end', function() {
+                            console.log('###Finished!');
+                            // window.sound.off('end');
+                            res()
+                        });
+                    })
+
+                    start({...data[1]
+                    });
+
+
+                })
+            });
+        }
+
+
+        function fetchUserInputFromAudio(text) {
+            return new Promise((res, rej) => {
+                fetch("http://127.0.0.1:7860/run/audio_lip", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            data: [
+                                text, null,
+                                "tts",
+                            ]
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(
+                        r => {
+                            let data = r.data;
+                            res(data)
+                        }
+                    )
+            })
+
+
+        }
+
+
+        function fetchUserInputFromText(text) {
+            return new Promise((res, rej) => {
+                fetch("http://127.0.0.1:7860/run/audio_lip", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            data: [
+                                text, null,
+                                "text-chatbot",
+                            ]
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(
+                        r => {
+                            let data = r.data;
+                            res(data)
+                        }
+                    )
+            })
+
+
+        }
+
+
+
+        function fetchLipData(base64) {
+            return new Promise((res, rej) => {
+                fetch("http://127.0.0.1:7860/run/audio_lip", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            data: [
+                                null, {
+                                    "name": "audio.wav",
+                                    "data": base64
+                                },
+                                "lip"
+                            ]
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(
+                        r => {
+                            let data = r.data;
+                            res(data[1])
+                        }
+                    )
+            });
+
+        }
+
+        function postAudio() {
+            window.human.thinking();
+            uploadAudioFile().then(base64 => {
+                Promise.all([fetchLipData(base64), loadAudioFile(base64)]).then(res => {
+                    // console.log(res)
+                    start({...res[0]
+                    });
+                    window.sound = res[1];
+                    window.sound.play();
+                    window.sound.once('end', function() {
+                        console.log('###Finished!');
+                        // window.sound.off('end');
+                    });
+                })
+            })
+
+        }
+
+        function playMouth(object, json) {
+            // let object=this;
+            let data = {...json
+            };
+
+            let values = new Array(object.children[1].morphTargetInfluences.length).fill(
+                0
+            )
+
+            for (let k in data) {
+
+                let index = object.children[1].morphTargetDictionary[k];
+                //   console.log(values[index],data[k])
+                if (data[k] != undefined) {
+                    values[index] = data[k]
+                };
+            }
+            // console.log(object,values)
+            object.children[1].morphTargetInfluences = [...values]
+        }
+
+
+        function initHuman() {
+            return new Promise((res, rej) => {
+                //    let v=document.querySelector('#editing_adapter');
+                //    let  m=v.shadowRoot.children[0]
+                let modelViewer = document.querySelector('model-viewer');
+                modelViewer.addEventListener('load', e => {
+
+                    modelViewer.querySelectorAll('button').forEach((hotspot) => {
+                        hotspot.addEventListener('click', () => {
+                            console.log(hotspot.innerText)
+                            if (hotspot.innerText == 'hi') {
+                                // window.human.listening();
+                                recognitionUserInput()
+                            }
+
+                        });
+                    });
+
+
+                    let scene = modelViewer.model.getThreeScene()
+                    let object = scene.children[0];
+
+                    modelViewer.playMouth = d => {
+                        console.log('###playMouth')
+                        modelViewer.animationName = 'Idle-Dwarf';
+                        playMouth(object, d);
+                    };
+                    modelViewer.thinking = () => {
+                        console.log('###thinking')
+                        modelViewer.animationName = 'Idle'
+                    };
+                    modelViewer.listening = () => {
+                        console.log('###listening')
+                        modelViewer.animationName = 'Key.001Action';
+                        listening().then(base64 => {
+                            // TODO 发到后端
+
+                        })
+                    };
+                    // console.log(m)
+                    res(modelViewer)
+                })
+
+            })
+
+        };
+
+
+        function start(data) {
+            window.data = data;
+            window.preTime = (new Date()).getTime();
+            window.fps = data.fps;
+            window.maxFrameIndex = data.frames.length - 1;
+            window.currentTime = 0;
+            window.duration = data.duration * 1000;
+            window.requestAnimationFrame(play);
+        }
+
+        function play() {
+            let t = (new Date()).getTime();
+            if (t - window.preTime > 1000 / window.fps) {
+
+                window.currentTime += t - window.preTime;
+                let index = Math.min(window.maxFrameIndex, Math.ceil(window.maxFrameIndex * window.currentTime / window.duration) - 1);
+                //   console.log(index,window.currentTime,window.duration,data.frames[index]);
+                // 播放
+                window.human.playMouth(window.data.frames[index].viseme);
+                window.preTime = t;
+
+            };
+            if (window.currentTime < window.duration) {
+                window.requestAnimationFrame(play)
+            } else {
+                // window.human.listening();
+            };
+        }
+    </script>
+</body>
+
+</html>
