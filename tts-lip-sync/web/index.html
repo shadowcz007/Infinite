@@ -127,13 +127,23 @@
                 window.recognition.lang = 'zh';
 
                 window.recognition.start();
+
+                window.recognition.onerror = function(e) {
+                    console.log(e.error)
+                    console.log('++onerror');
+                }
+
                 // 正确识别单词或短语时的事件处理程序
                 window.recognition.onresult = function(event) {
+                    console.log('++onresult');
+                    let text = ""
+                    for (const res of event.results) {
+                        text += res[0].transcript + ' ';
+                    }
 
-                    let text = event.results[0][0].transcript;
-                    console.log(window.humanIsPlay, event.results[0][0].transcript);
+                    console.log(window.humanIsPlay, text);
                     // window.recognition.stop();
-                    if (!window.humanIsPlay) {
+                    if (!window.humanIsPlay && text) {
                         window.humanIsPlay = true;
                         window.recognition.stop();
                         userInputByText(text).then(() => {
@@ -145,10 +155,37 @@
 
                 };
 
-                // window.recognition.onspeechend = function() {
-                //     window.recognition.stop();
-                // }
-            };
+                window.recognition.onspeechstart = function() {
+                    // window.human.thinking();
+                    console.log('++onspeechstart');
+                    // window.recognition.stop();
+                }
+                window.recognition.onspeechend = function() {
+                    console.log('++onspeechend');
+                    // window.human.thinking();
+                    // window.recognition.stop();
+                }
+                window.recognition.onaudioend = function() {
+                    console.log('++onaudioend');
+                    window.human.thinking();
+                    // window.recognition.stop();
+                }
+
+                window.recognition.onaudiostart = function() {
+                    console.log('++onaudiostart');
+                    window.human.listening();
+                    // 禁止发api
+                    // window.humanIsPlay = true;
+                    // window.recognition.start();
+                }
+
+                window.recognition.onsoundstart = function() {
+                    console.log('++onsoundstart')
+                }
+
+            } else {
+                window.recognition.start();
+            }
 
         }
 
@@ -177,7 +214,7 @@
 
         function fetchUserInputFromAudio(text) {
             return new Promise((res, rej) => {
-                fetch("http://127.0.0.1:7860/run/audio_lip", {
+                fetch(window.location.protocol + '//' + window.location.hostname + ":7860/run/audio_lip", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
@@ -204,7 +241,7 @@
 
         function fetchUserInputFromText(text) {
             return new Promise((res, rej) => {
-                fetch("http://127.0.0.1:7860/run/audio_lip", {
+                fetch(window.location.protocol + '//' + window.location.hostname + ":7860/run/audio_lip", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
@@ -232,7 +269,7 @@
 
         function fetchLipData(base64) {
             return new Promise((res, rej) => {
-                fetch("http://127.0.0.1:7860/run/audio_lip", {
+                fetch(window.location.protocol + '//' + window.location.hostname + ":7860/run/audio_lip", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
@@ -309,8 +346,10 @@
                         hotspot.addEventListener('click', () => {
                             console.log(hotspot.innerText)
                             if (hotspot.innerText == 'hi') {
-                                // window.human.listening();
-                                recognitionUserInput()
+                                window.human.listening();
+                                userInputByText('hello').then(() => {
+                                    recognitionUserInput();
+                                })
                             }
 
                         });
@@ -322,7 +361,7 @@
 
                     modelViewer.playMouth = d => {
                         console.log('###playMouth')
-                        modelViewer.animationName = 'Idle-Dwarf';
+                        modelViewer.animationName = 'Talk';
                         playMouth(object, d);
                     };
                     modelViewer.thinking = () => {
@@ -331,13 +370,13 @@
                     };
                     modelViewer.listening = () => {
                         console.log('###listening')
-                        modelViewer.animationName = 'Key.001Action';
-                        listening().then(base64 => {
-                            // TODO 发到后端
-
-                        })
+                        modelViewer.animationName = 'Looking';
+                        // userInputByText('hello').then(() => {
+                        //     recognitionUserInput();
+                        // })
                     };
                     // console.log(m)
+                    modelViewer.thinking();
                     res(modelViewer)
                 })
 

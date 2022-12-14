@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Advanced Chat Flows with chat-bubble</title>
+
+    <!-- for mobile screens -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- stylesheets are conveniently separated into components -->
+    <link rel="stylesheet" media="all" href="../component/styles/setup.css">
+    <link rel="stylesheet" media="all" href="../component/styles/says.css">
+    <link rel="stylesheet" media="all" href="../component/styles/reply.css">
+    <link rel="stylesheet" media="all" href="../component/styles/typing.css">
+    <link rel="stylesheet" media="all" href="../component/styles/input.css">
+    <style>
+        body {
+            background: black;
+        }
+        
+        .bubble-container {
+            margin-top: 0vh;
+            height: 100vh;
+            background-color: transparent !important;
+        }
+        
+        .bubble.reply .bubble-content .bubble-button {
+            font-size: 20px!important;
+            padding: 10px 20px!important;
+        }
+        
+        .bubble,
+        .bubble-typing {
+            font-size: 20px!important;
+            padding: 10px 20px!important;
+        }
+        
+        .bubble-container .input-wrap textarea {
+            margin: 0;
+            width: calc(100% - 30px);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- container element for chat window -->
+    <div id="chat"></div>
+
+    <!-- import the JavaScript file -->
+    <script src="../component/Bubbles.js"></script>
+    <script>
+        // conversation object stored in separate variable:
+        var convo = {
+                // "ice" (as in "breaking the ice") is a required conversation object
+                // that maps the first thing the bot will say to the user
+                ice: {
+                    // "says" defines an array of sequential bubbles
+                    // that the bot will produce
+                    says: [
+                        "Hello!",
+                        "我是meta-shadow",
+                        `<img src="${'../images/sad_path.gif'}" />`,
+                        "回复#，开启创作"
+                    ],
+
+                }, // end required "ice" conversation object
+
+                // side note
+                sidetrack: {
+                    says: [
+                        "Things which go way beyond a single topic of conversation!",
+                        "<img src=https://meanbusiness.com/wp-content/uploads/2018/04/Walk-Cycle-Banana-Jelly-Bean-GIF-by-Ethan-Barnowsky-source.gif />",
+                    ],
+                    reply: [{
+                        question: "下一张", // label for the reply option
+                        answer: "sidetrack" // key for a "side note" we can reference from multiple points in the chat
+                    }]
+                },
+
+
+                end: {
+                    says: [
+                        "Thanks for your time and attention.",
+                        "The chat is over, but you can <strong>start over</strong> to see how this conversation could have gone differently."
+                    ],
+                    reply: [{
+                        question: "开始 😁",
+                        answer: "ice"
+                    }]
+                }
+            } // end conversation object
+        var convo2 = url => {
+            return {
+                ice: {
+                    says: [
+                        "Things which go way beyond a single topic of conversation!",
+                        `<img src='${url}'/>`,
+                    ],
+                    reply: [{
+                        question: "下一张", // label for the reply option
+                        answer: "sidetrack" // key for a "side note" we can reference from multiple points in the chat
+                    }]
+                }
+            }
+        }
+
+        var reply = (text, url) => {
+            return {
+                ice: {
+                    says: [
+                        "😄",
+                        `<img src='${url}'/>`,
+                    ],
+                    reply: [{
+                        question: text
+                    }]
+                }
+            }
+        }
+
+        var chatWindow = new Bubbles(
+            document.getElementById("chat"), // ...passing HTML container element...
+            "chatWindow" // ...and name of the function as a parameter
+        )
+
+        // `.talk()` will get your bot to begin the conversation
+        chatWindow.talk(convo);
+
+        window.loading = false;
+        window.preText = '';
+
+        function getUserReply() {
+
+            fetch('../sd/text.txt', {
+                cache: 'no-cache'
+            }).then(res => res.text()).then(res => {
+                res = res.split('[image]');
+                let text = res[0],
+                    imgurl = res[1]
+                if (loading) return;
+                if (text == preText) return loading = false;
+                loading = true;
+                chatWindow.talk(reply(text, '../sd/' + imgurl));
+                preText = text;
+                setTimeout(() => loading = false, 1500);
+
+            });
+
+
+
+
+        };
+
+        setTimeout(() => setInterval(() => getUserReply(), 1000), 8000)
+
+
+        // this function is called when user clicks "Yes!" in the "chapter-four" dialogue
+        externalResourceFunction = function() {
+            // together with the function we'll restart the conversation starting from "capther-four"
+            // to make sure the user isn't left hanging after the function below has been executed
+            chatWindow.talk(convo, "chapter-four")
+
+
+        }
+
+        function arrayBuffer2base64(buffer) {
+            var uInt8Array = new Uint8Array(buffer)
+            var i = uInt8Array.length;
+            var binaryString = new Array(i);
+            while (i--) {
+                binaryString[i] = String.fromCharCode(uInt8Array[i]);
+            }
+            var data = binaryString.join('');
+
+            var base64 = window.btoa(data);
+            var url = "data:image/png;base64," + base64;
+
+
+            return url
+
+        }
+    </script>
+</body>
+
+</html>
