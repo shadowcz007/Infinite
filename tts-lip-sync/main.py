@@ -18,11 +18,8 @@ import paddlehub as hub
 #     name='fastspeech2_baker',
 #     version='1.0.0',output_dir="./data")
 
-tts_model = hub.Module(name='ge2e_fastspeech2_pwgan', output_dir='./data', speaker_audio='./data/shadow.wav') 
-
 chatbot_model = hub.Module(name='plato-mini')
-
-
+tts_model = hub.Module(name='ge2e_fastspeech2_pwgan', output_dir='./data', speaker_audio='./data/shadow.wav') 
 
 
 def re_wav_16k(name,samplerate=16000):
@@ -167,18 +164,19 @@ def mouth_shapes_to_frames(duration,mouth_cues):
 
 
 
-def start(text,wav_file_input,radio_input):
+def start(question,wav_file_input,radio_input):
 
     if radio_input== "asr-chatbot":
         speech_recognize(wav_file_input)
     elif radio_input== "text-chatbot":
         #
-        text=chatbot(text)
+        text=chatbot(question)
         wav_file = speech_generate(text)
         # print(text)
     elif radio_input=="tts":
-        wav_file = speech_generate(text)
-        print(wav_file)
+        wav_file = speech_generate(question)
+        text=question
+        # print(wav_file)
     else:
         wav_file=write_wav(wav_file_input[1],wav_file_input[0])
     #TODO 改造成 接受录音，返回答案
@@ -188,6 +186,8 @@ def start(text,wav_file_input,radio_input):
     data=lip_sync(wav_file)
     frames=mouth_shapes_to_frames(data["metadata"]["duration"],data["mouthCues"])
     frames['base64']=data['base64']
+    frames['question']=question
+    frames['text']=text
     return wav_file,frames
 
 
@@ -211,4 +211,4 @@ with gr.Blocks() as demo:
 
 
 if __name__ == "__main__":
-    demo.queue(concurrency_count=1, max_size=4).launch(share=False,server_name="0.0.0.0")
+    demo.queue(concurrency_count=4, max_size=8).launch(share=False,server_name="0.0.0.0")

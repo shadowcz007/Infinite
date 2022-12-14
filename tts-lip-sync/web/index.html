@@ -15,10 +15,10 @@
     <script src="../component/Bubbles.js"></script>
 
     <link rel="stylesheet" media="all" href="../component/styles/setup.css">
-	<link rel="stylesheet" media="all" href="../component/styles/says.css">
-	<link rel="stylesheet" media="all" href="../component/styles/reply.css">
-	<link rel="stylesheet" media="all" href="../component/styles/typing.css">
-	<link rel="stylesheet" media="all" href="../component/styles/input.css">
+    <link rel="stylesheet" media="all" href="../component/styles/says.css">
+    <link rel="stylesheet" media="all" href="../component/styles/reply.css">
+    <link rel="stylesheet" media="all" href="../component/styles/typing.css">
+    <link rel="stylesheet" media="all" href="../component/styles/input.css">
     <style>
         body {
             padding: 0;
@@ -29,40 +29,43 @@
             width: 100%;
             height: 100vh;
         }
-        #waveform{
+        
+        #waveform {
             position: absolute;
-    top: 10em;
-    /* padding: 3em; */
-    left: 10%;
-    width: 80%;
-    user-select: none;
-    z-index: 0;
+            top: 10em;
+            /* padding: 3em; */
+            left: 10%;
+            width: 80%;
+            user-select: none;
+            z-index: 0;
         }
-
+        
         .bubble-container {
             height: 100vh;
             background: none!important;
         }
+        
         .bubble-container .input-wrap textarea {
             margin: 0;
             width: calc(100% - 30px);
         }
-        #user_input{
+        
+        #user_input {
             position: absolute;
-    /* top: 0; */
-    left: 0;
-    z-index: 99;
-    height: 72px;
-    bottom: 1em;
-    margin: 2%;
-    width: 96%;
+            /* top: 0; */
+            left: 0;
+            z-index: 99;
+            height: 72px;
+            bottom: 1em;
+            margin: 2%;
+            width: 96%;
         }
     </style>
 </head>
 
 <body>
 
-    
+
 
     <div id="app" style="background: linear-gradient(hsl(129deg 100% 97%), hsl(213deg 100% 89%)); overflow-x: hidden;">
 
@@ -85,28 +88,25 @@
             <div id="waveform"></div>
             <div id="chat"></div>
         </div>
-            <model-viewer src="./assets/model/base-shadow.glb" ar ar-modes="webxr scene-viewer quick-look" 
-            camera-controls poster="./assets/image/poster.webp" 
-            autoplay animation-name="Idle"
-            shadow-intensity="1" autoplay style="background-color: unset;">
-                <button class="Hotspot" slot="hotspot-1" data-position="0.16843323423898407m 1.4220791200168543m -0.007215726788095456m" data-normal="-0.3923983733134677m 0.025428432508705207m 0.9194438054830186m" data-visibility-attribute="visible">
+        <model-viewer src="./assets/model/base-shadow.glb" ar ar-modes="webxr scene-viewer quick-look" camera-controls poster="./assets/image/poster.webp" autoplay animation-name="Idle" shadow-intensity="1" autoplay style="background-color: unset;">
+            <button class="Hotspot" slot="hotspot-1" data-position="0.16843323423898407m 1.4220791200168543m -0.007215726788095456m" data-normal="-0.3923983733134677m 0.025428432508705207m 0.9194438054830186m" data-visibility-attribute="visible">
                     <div class="HotspotAnnotation" id="hotspot-hello">hi</div>
                 </button>
-                <div class="progress-bar hide" slot="progress-bar">
-                    <div class="update-bar"></div>
-                </div>
-                <button slot="ar-button" id="ar-button">
+            <div class="progress-bar hide" slot="progress-bar">
+                <div class="update-bar"></div>
+            </div>
+            <button slot="ar-button" id="ar-button">
                     View in your space
                 </button>
-                <div id="ar-prompt">
-                    <img src="https://modelviewer.dev/shared-assets/icons/hand.png">
-                </div>
-            </model-viewer>
-
-            <div class="bubble-container" id="user_input" >
-                <div class="input-wrap"><textarea placeholder="Ask me anything..."></textarea></div>
+            <div id="ar-prompt">
+                <img src="https://modelviewer.dev/shared-assets/icons/hand.png">
             </div>
-            
+        </model-viewer>
+
+        <div class="bubble-container" id="user_input">
+            <div class="input-wrap"><textarea placeholder="Ask me anything..."></textarea></div>
+        </div>
+
 
     </div>
     <!--     
@@ -124,50 +124,58 @@
         </div>
     </model-viewer> -->
     <script>
-        document.querySelector('#user_input textarea').addEventListener('input',e=>{
-            if(e.inputType=="insertLineBreak"){
+        document.querySelector('#user_input textarea').addEventListener('input', e => {
+            if (e.inputType == "insertLineBreak") {
                 console.log(e.target.value)
                 userInput(e.target.value);
+                document.querySelector('#user_input textarea').value = ""
+                if (window.human && !window.human.humanIsPlay) userInputByText(e.target.value)
+
             }
         })
 
         var chatWindow = new Bubbles(document.getElementById("chat"), "chatWindow");
 
-        function userInput(question){
+        function userInput(question) {
             // let question='';
             var convo = {
-                ice: {says: [],
-                reply: [
-                    {
-                        question
-                    },
-                    
-                ],
-                },
-            };
-            chatWindow.talk(convo)
-        }
-        function chatbotSays(t){
-             // let question='';
-             var convo = {
-                ice: {says: [t],
-                reply: [],
+                ice: {
+                    says: [],
+                    reply: [{
+                            question
+                        },
+
+                    ],
                 },
             };
             chatWindow.talk(convo)
         }
 
-        
+        function chatbotSays(t) {
+            // let question='';
+            var convo = {
+                ice: {
+                    says: [t],
+                    reply: [],
+                },
+            };
+            chatWindow.talk(convo)
+        }
+
+
 
 
         window.oscillate = function(min, max, period, time) {
-        const mag = max - min;
-        return Math.cos(Math.PI + 2 * Math.PI * time / period) * (min + mag / 2.0) +
-            mag / 2.0;
+            const mag = max - min;
+            return Math.cos(Math.PI + 2 * Math.PI * time / period) * (min + mag / 2.0) +
+                mag / 2.0;
         };
 
 
-        initHuman().then(w => window.human = w);
+        initHuman().then(w => {
+            window.human = w;
+            window.human.humanIsPlay = false;
+        });
 
         // async function listening() {
         //     let stream = await navigator.mediaDevices.getUserMedia({
@@ -190,9 +198,10 @@
         // }
 
         // 网络请求
-        const baseUrl=window.location.protocol + '//' + window.location.hostname + ":7860/run/audio_lip";
-        function baseFetch(text=null,base64=null,type='tts'){
-            
+        const baseUrl = window.location.protocol + '//' + window.location.hostname + ":7860/run/audio_lip";
+
+        function baseFetch(text = null, base64 = null, type = 'tts') {
+
             //  type : tts,text-chatbot,lip
             return new Promise((res, rej) => {
                 fetch(baseUrl, {
@@ -202,10 +211,10 @@
                         },
                         body: JSON.stringify({
                             data: [
-                                text, base64?{
+                                text, base64 ? {
                                     "name": "audio.wav",
                                     "data": base64
-                                }:null,
+                                } : null,
                                 type,
                             ]
                         })
@@ -213,23 +222,23 @@
                     .then(r => r.json())
                     .then(
                         r => res(r.data)
-                    ).catch(e=>res(e))
+                    ).catch(e => res(e))
             })
-      
+
 
         }
 
 
         function fetchUserInputFromAudio(text) {
-            return baseFetch(text,null,'tts')
+            return baseFetch(text, null, 'tts')
         }
 
         function fetchUserInputFromText(text) {
-            return baseFetch(text,null,'text-chatbot')
+            return baseFetch(text, null, 'text-chatbot')
         }
 
         function fetchLipData(base64) {
-            return baseFetch(null,base64,'lip')
+            return baseFetch(null, base64, 'lip')
         }
 
         // 打开本地的音频文件wav
@@ -250,14 +259,14 @@
         }
 
 
-        
+
 
         function recognitionUserInput(infoDiv) {
             console.log('recognition++start---------')
             if (window.recognition == undefined) {
                 // 创建一个SpeechRecognition对象
                 window.recognition = new webkitSpeechRecognition();
-                window.recognition.state=0;
+                window.recognition.state = 0;
                 // 配置设置以使每次识别都返回连续结果
                 window.recognition.continuous = true;
                 window.recognition.maxAlternatives = 1;
@@ -265,40 +274,42 @@
                 window.recognition.interimResults = false;
                 window.recognition.lang = 'zh';
 
-                if(window.recognition.state==0)window.recognition.start();
+                if (window.recognition.state == 0) window.recognition.start();
 
                 window.recognition.onerror = function(e) {
-                    console.log('recognition++'+e.error)
-                    // console.log('recognition++onerror');
-                    // error 并不会导致自动end，end是有事件的，所以只需在end的时候再start即可
-                    // if(window.recognition.state==0)window.recognition.start();
+                    console.log('recognition++' + e.error)
+                        // console.log('recognition++onerror');
+                        // error 并不会导致自动end，end是有事件的，所以只需在end的时候再start即可
+                        // if(window.recognition.state==0)window.recognition.start();
 
-                    if(infoDiv)infoDiv.innerText=e.error;
+                    if (infoDiv) infoDiv.innerText = e.error;
                 }
 
                 // 正确识别单词或短语时的事件处理程序
                 window.recognition.onresult = function(event) {
                     console.log('recognition++onresult');
-                    
+
                     // 最新的回复
-                    let text =Array.from(event.results,r=>r[0]).pop().transcript;
-                    
-                    console.log(window.humanIsPlay, text,Array.from(event.results,r=>r[0]));
-                    
+                    let text = Array.from(event.results, r => r[0]).pop().transcript;
+
+                    console.log(window.human.humanIsPlay, text);
+                    //TODO 
+                    let matchKeys = ['找图', '消息', '元宇宙'];
                     // chatbot bubble
                     // if(infoDiv)infoDiv.innerText=text;
+                    // if (text.toLowerCase().match('shadow')) window.isWake = true;
 
                     // window.recognition.stop();
-                    if (!window.humanIsPlay && text) {
-                        window.humanIsPlay = true;
+                    if (!window.human.humanIsPlay && text && matchKeys.filter(k => text.match(k)).length > 0) {
+                        window.human.humanIsPlay = true;
                         // window.recognition.stop();
                         window.human.thinking();
-                        if(infoDiv)infoDiv.innerText='thinking';
+                        if (infoDiv) infoDiv.innerText = 'thinking';
 
                         userInputByText(text).then(() => {
                             // if(window.recognition.state==0)window.recognition.start();
-                            window.humanIsPlay = false;
-                            if(window.recognition.state==0)window.recognition.start();
+                            // window.human.humanIsPlay = false;
+                            if (window.recognition.state == 0) window.recognition.start();
                         })
                     }
 
@@ -308,7 +319,8 @@
                     // window.human.thinking();
                     console.log('recognition++onspeechstart');
                     // window.recognition.stop();
-                    
+                    // if (window.human && window.human.humanIsPlay) window.recognition.stop();
+
                 }
                 window.recognition.onspeechend = function() {
                     console.log('recognition++onspeechend');
@@ -323,7 +335,7 @@
 
                 window.recognition.onaudiostart = function() {
                     console.log('recognition++onaudiostart');
-                    
+
                     // 禁止发api
                     // window.humanIsPlay = true;
                     // if(window.recognition.state==0)window.recognition.start();
@@ -335,26 +347,46 @@
 
                 window.recognition.onstart = function() {
                     console.log('recognition++onstart')
-                    window.recognition.state=1;
-                    setTimeout(()=>window.human.listening(),3500);
+                    window.recognition.state = 1;
+                    setTimeout(() => window.human.listening(), 3500);
                 }
 
                 window.recognition.onend = function() {
                     console.log('recognition++onend')
-                    window.recognition.state=0;
-                    if(window.recognition.state==0)window.recognition.start();
+                    window.recognition.state = 0;
+                    // window.isWake = false;
+                    if (window.recognition.state == 0) window.recognition.start();
+
                 }
 
             } else {
-                if(window.recognition.state==0)window.recognition.start();
+                if (window.recognition.state == 0) window.recognition.start();
             }
 
+        }
+
+        function userInputByTTS(text) {
+            return new Promise((res, rej) => {
+                fetchUserInputFromAudio(text).then(data => {
+                    if (data) {
+                        start({...data[1]
+                        }).then(() => res())
+                    } else {
+                        res();
+                    };
+                })
+            });
         }
 
         function userInputByText(text) {
             return new Promise((res, rej) => {
                 fetchUserInputFromText(text).then(data => {
-                    if(data) {start({...data[1] }).then(()=>res())}else{res();};
+                    if (data) {
+                        start({...data[1]
+                        }).then(() => res())
+                    } else {
+                        res();
+                    };
                 })
             });
         }
@@ -363,37 +395,39 @@
         function audio2LipSync() {
             window.human.idle();
             openAudioFile().then(base64 => {
-                fetchLipData(base64).then(res=>{
-                    let data={...res[1],base64};
+                fetchLipData(base64).then(res => {
+                    let data = {...res[1],
+                        base64
+                    };
                     start(data);
                 });
             })
         }
 
-        
+
 
 
         function initHuman() {
-            const playMouth=(object, json) =>{
-            // let object=this;
-            let data = {...json
-            };
-
-            let values = new Array(object.children[1].morphTargetInfluences.length).fill(
-                0
-            )
-
-            for (let k in data) {
-
-                let index = object.children[1].morphTargetDictionary[k];
-                //   console.log(values[index],data[k])
-                if (data[k] != undefined) {
-                    values[index] = data[k]
+            const playMouth = (object, json) => {
+                // let object=this;
+                let data = {...json
                 };
-            }
-            // console.log(object,values)
-            object.children[1].morphTargetInfluences = [...values]
-        };
+
+                let values = new Array(object.children[1].morphTargetInfluences.length).fill(
+                    0
+                )
+
+                for (let k in data) {
+
+                    let index = object.children[1].morphTargetDictionary[k];
+                    //   console.log(values[index],data[k])
+                    if (data[k] != undefined) {
+                        values[index] = data[k]
+                    };
+                }
+                // console.log(object,values)
+                object.children[1].morphTargetInfluences = [...values]
+            };
 
             return new Promise((res, rej) => {
                 //    let v=document.querySelector('#editing_adapter');
@@ -403,21 +437,23 @@
 
                     (() => {
                         const time = performance.now();
-                        const app=document.querySelector('#app');
-                        let color=Math.ceil(Math.random()*360);
-                        app.setAttribute('data-color',color);
+                        const app = document.querySelector('#app');
+                        let color = Math.ceil(Math.random() * 360);
+                        app.setAttribute('data-color', color);
+                        let preTimeA = (new Date()).getTime();
                         const animate = (now) => {
                             // 当在播放嘴型的时候，禁止背景变化，提高性能
-                            if(window.human&&!window.human.humanIsPlay||window.human&&window.human.humanIsPlay==undefined){
-                                modelViewer.shadowIntensity = oscillate(0, 2, 4000, now - time);
+                            // console.log((new Date()).getTime() - preTimeA)
+                            if (((new Date()).getTime() - preTimeA > 1200) && (window.human && !window.human.humanIsPlay || window.human && window.human.humanIsPlay == undefined)) {
+                                preTimeA = (new Date()).getTime();
                                 // bg 动画
-                                let color=Math.ceil(app.getAttribute('data-color'));
+                                let color = Math.ceil(app.getAttribute('data-color'));
                                 color++;
-                                if(color>360)color=0;
-                                app.setAttribute('data-color',color);
-                                app.style.background=`linear-gradient(hsl(${color}deg 100% 97%), hsl(${360-color}deg 100% 89%))`;
+                                if (color > 360) color = 0;
+                                app.setAttribute('data-color', color);
+                                app.style.background = `linear-gradient(hsl(${color}deg 100% 97%), hsl(${360-color}deg 100% 89%))`;
                             }
-                           
+                            modelViewer.shadowIntensity = oscillate(0, 2, 4000, now - time);
                             requestAnimationFrame(animate);
                         };
 
@@ -427,10 +463,10 @@
                     modelViewer.querySelectorAll('button').forEach((hotspot) => {
                         hotspot.addEventListener('click', () => {
                             console.log(hotspot.innerText)
-                            let annotation=hotspot.querySelector('.HotspotAnnotation');
-                            
+                            let annotation = hotspot.querySelector('.HotspotAnnotation');
+
                             if (annotation.id == 'hotspot-hello') {
-                                window.action='greeting';
+                                window.action = 'greeting';
                                 userInputByText('hello').then(() => {
                                     // console.log('0000')
                                     recognitionUserInput(annotation);
@@ -448,6 +484,7 @@
                         console.log('###playMouth')
                         modelViewer.animationName = 'Talk';
                         playMouth(object, d);
+                        // if (window.recognition && window.recognition.state == 1) window.recognition.stop();
                     };
                     modelViewer.idle = () => {
                         console.log('###idle')
@@ -457,7 +494,7 @@
                         console.log('###thinking')
                         modelViewer.animationName = 'Gesture-Head';
                         modelViewer.play({
-                            repetitions:1
+                            repetitions: 1
                         })
                     };
                     modelViewer.listening = () => {
@@ -467,44 +504,44 @@
                         //     recognitionUserInput();
                         // })
                         modelViewer.play({
-                            repetitions:2
+                            repetitions: 2
                         })
                     };
 
-                    modelViewer.greeting=()=>{
+                    modelViewer.greeting = () => {
                         console.log('###greeting')
                         modelViewer.animationName = 'Gesture--Greeting';
                         modelViewer.play({
-                            repetitions:1
+                            repetitions: 1
                         })
                     }
 
                     // 音频
-                    modelViewer.playAudio=(base64,isUI=false)=>{
+                    modelViewer.playAudio = (base64, isUI = false) => {
                         return new Promise((res, rej) => {
-                            if(isUI){
-                                if(window.wavesurfer==undefined){
+                            if (isUI) {
+                                if (window.wavesurfer == undefined) {
                                     window.wavesurfer = WaveSurfer.create({
                                         container: document.querySelector('#waveform'),
-                                        barMinHeight:10,
-                                        cursorWidth:0,
-                                        interact:false
+                                        barMinHeight: 10,
+                                        cursorWidth: 0,
+                                        interact: false
                                     });
 
-                                    window.wavesurfer.on('ready',()=>{
+                                    window.wavesurfer.on('ready', () => {
                                         window.wavesurfer.play()
                                     });
-                                    
-                                };
-                                
-                                window.wavesurfer.load(base64);
-                                
-                                window.wavesurfer.on('play',()=>{
-                                    res(window.wavesurfer);
-                                    window.wavesurfer.un('play')
-                                });
 
-                            }else{
+                                };
+
+                                window.wavesurfer.load(base64);
+                                let callback = () => {
+                                    res(window.wavesurfer);
+                                    window.wavesurfer.un('play', callback)
+                                }
+                                window.wavesurfer.on('play', callback);
+
+                            } else {
                                 window.sound = new Howl({
                                     src: [base64]
                                 });
@@ -519,7 +556,7 @@
                                     });
                                 };
                             }
-                            
+
                         });
                     }
 
@@ -534,7 +571,7 @@
                     //         res(wavesurfer);
                     //     });
                     // }
-                    
+
                     // 初始化完成
                     // console.log(m)
                     modelViewer.idle();
@@ -565,8 +602,8 @@
 
 
         // 驱动数字人-播放声音和动作
-        function start(data,isUI=true) {
-            window.human.humanIsPlay=true;
+        function start(data, isUI = true) {
+            window.human.humanIsPlay = true;
 
             window.data = data;
             window.preTime = (new Date()).getTime();
@@ -577,37 +614,37 @@
             window.requestAnimationFrame(play);
 
             // 在聊天界面上显示出文字
-            if(data.text){
+            if (data.text) {
                 chatbotSays(data.text);
             }
 
-            return new Promise((res,rej)=>{
-                if(data.base64){
-                        window.human.playAudio(data.base64,isUI).then(audio=>{
+            return new Promise((res, rej) => {
+                if (data.base64) {
+                    window.human.playAudio(data.base64, isUI).then(audio => {
 
-                            if(isUI){
-                                audio.on('finish',()=>{
-                                    console.log('###Finished!');
-                                    window.human.idle();
-                                    window.human.humanIsPlay=false;
-                                    res();
-                                })
-                            }else{
-                                audio.once('end', function() {
-                                    console.log('###Finished!');
-                                    // window.sound.off('end');
-                                    window.human.idle();
-                                    window.human.humanIsPlay=false;
-                                    res()
-                                });
-                            }
-                            // 动作播放,当有嘴型在播的时候，可以强制播放动作
-                            if(window.action&&window.human[window.action]){
-                                window.human[window.action]();
-                            }
+                        if (isUI) {
+                            audio.once('finish', () => {
+                                console.log('###Finished!');
+                                window.human.idle();
+                                setTimeout(() => window.human.humanIsPlay = false, 500)
+                                res();
+                            })
+                        } else {
+                            audio.once('end', function() {
+                                console.log('###Finished!');
+                                // window.sound.off('end');
+                                window.human.idle();
+                                setTimeout(() => window.human.humanIsPlay = false, 500)
+                                res()
+                            });
+                        }
+                        // 动作播放,当有嘴型在播的时候，可以强制播放动作
+                        if (window.action && window.human[window.action]) {
+                            window.human[window.action]();
+                        }
                     })
-                }else{
-                    window.human.humanIsPlay=false;
+                } else {
+                    setTimeout(() => window.human.humanIsPlay = false, 500)
                     res();
                 }
             })
@@ -629,7 +666,7 @@
                 window.requestAnimationFrame(play)
             } else {
                 //嘴型动画播完了
-                window.action=null;
+                window.action = null;
             };
         }
     </script>
