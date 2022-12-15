@@ -2,7 +2,15 @@ from playwright.sync_api import Playwright, sync_playwright, expect
 import json,hashlib
 from datetime import datetime
 
-headless=True
+PROXY_HTTP = "http://127.0.0.1"
+# PROXY_SOCKS5 = "socks5://127.0.0.1:51837"
+
+browserLaunchOptionDict = {
+    "headless": True,
+    # "proxy": {
+    #     "server": PROXY_HTTP,
+    # }
+}
 
 keywords='''
 元宇宙
@@ -131,10 +139,11 @@ def rank(items):
 
 
 def get_keyword(keyword='web3',page=None):
-
-    page.goto("https://www.bing.com/news/search?q="+keyword+"&qft=interval%3d%227%22&form=PTFTNR")
+    page.goto('https://global.bing.com/search?q=%s&setmkt=en-US&setlang=en')
+    page.wait_for_timeout(1000)
+    page.goto("https://global.bing.com/news/search?q="+keyword+"&qft=interval%3d%227%22&form=PTFTNR")
     page.wait_for_load_state('domcontentloaded')
-
+    
     items={}
 
     for i in range(10):
@@ -201,7 +210,7 @@ def get_keyword(keyword='web3',page=None):
     return res['htmls']
 
 def run(playwright: Playwright) -> None:
-    browser = playwright.chromium.launch(headless=headless)
+    browser = playwright.chromium.launch(**browserLaunchOptionDict)
     context = browser.new_context()
     page = context.new_page()
 
@@ -230,7 +239,7 @@ def run(playwright: Playwright) -> None:
    <title>'''+(d.split(' ')[0])+'''</title>
 </head><body>'''+html +'''</body></html>'''
 
-    f = open("./data/"+d+"_"+str(count)+".html", "w")
+    f = open("./data/"+d+"_"+str(len(count_keywords))+".html", "w")
     f.write(html)
     f.close()
 
