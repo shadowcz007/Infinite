@@ -239,7 +239,7 @@ def run(playwright: Playwright) -> None:
    <title>'''+(d.split(' ')[0])+'''</title>
 </head><body>'''+html +'''</body></html>'''
 
-    f = open("./data/"+d+"_"+str(len(count_keywords))+".html", "w")
+    f = open("./data/"+(d.split(' ')[0])+"_"+str(len(count_keywords))+".html", "w")
     f.write(html)
     f.close()
 
