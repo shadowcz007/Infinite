@@ -148,7 +148,7 @@ def mouth_shapes_to_frames(duration,mouth_cues):
         weights=create_weight_data(1+end_index-start_index)
 
         for index in range(start_index,end_index+1):
-            weight=weights[index-start_index]*0.8
+            weight=weights[index-start_index]*0.9
             # 优化张嘴的幅度
             # print(weight,index,start_index,end_index,len(frames))
             index=min(index,len(frames)-1)

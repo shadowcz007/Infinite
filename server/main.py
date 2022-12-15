@@ -50,6 +50,7 @@ pre_count=0
 screen_area=[620,380, 900,960]
 
 
+
 # 百度的ocr
 def init_ocr():
     import ppppocr
@@ -99,17 +100,21 @@ def write_json(a,file_path):
     return
 
 def image_to_base64(image):
-    # 输入为PIL读取的图片，输出为base64格式
-    byte_data = io.BytesIO()# 创建一个字节流管道
-    image.save(byte_data, format="JPEG")# 将图片数据存入字节流管道
-    byte_data = byte_data.getvalue()# 从字节流管道中获取二进制
-    base64_str = base64.b64encode(byte_data).decode("ascii")# 二进制转base64
+    base64_str=None
+    if image:
+        # 输入为PIL读取的图片，输出为base64格式
+        byte_data = io.BytesIO()# 创建一个字节流管道
+        image.save(byte_data, format="JPEG")# 将图片数据存入字节流管道
+        byte_data = byte_data.getvalue()# 从字节流管道中获取二进制
+        base64_str = base64.b64encode(byte_data).decode("ascii")# 二进制转base64
     return base64_str
 
 def base64_to_image(base64_str):
-    # 输入为base64格式字符串，输出为PIL格式图片
-    byte_data = base64.b64decode(base64_str) # base64转二进制
-    image = Image.open(io.BytesIO(byte_data)) # 将二进制转为PIL格式图片
+    image=None
+    if base64_str:
+        # 输入为base64格式字符串，输出为PIL格式图片
+        byte_data = base64.b64decode(base64_str) # base64转二进制
+        image = Image.open(io.BytesIO(byte_data)) # 将二进制转为PIL格式图片
     return image
     
 
