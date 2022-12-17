@@ -11,7 +11,10 @@ sd_zh_pipe.to('cuda')
 from itertools import product
 
 import argparse
-import utils
+try:
+    from . import utils
+except:
+    import utils
 
 
 def split_text(text,num=2):

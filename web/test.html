@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body {
+            background: black;
+            text-align: center;
+        }
+        
+        img {
+            box-shadow: 0 0 20px 0px #a1a1a1;
+        }
+        
+        .image-bg {
+            background-size: cover;
+            width: 100%;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            z-index: -11;
+            left: 0;
+            filter: blur(36px) brightness(0.5);
+        }
+        
+        .card {
+            margin-top: 44px;
+        }
+        
+        .title {
+            color: white;
+            font-size: 24px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <main></main>
+    <script>
+        window.items = [];
+
+        var reply = (text, url, isPush = true) => {
+            let html = `
+            <div class="card">
+                <img src='${url}' class="image"/>
+                <div class="image-bg" style="background-image:url(${url})"></div>
+            <h4 class="title">${text}</h4></div>`;
+            if (isPush) {
+                window.items.push({
+                    text,
+                    url
+                });
+                // window.count++;
+            };
+
+            return html
+        }
+
+        function randomGet() {
+            let {
+                text,
+                url
+            } = window.items[Math.round(Math.random() * window.items.length)];
+            return document.body.innerHTML = reply(text, url, false)
+        }
+
+        window.loading = false;
+        window.preText = '';
+        window.count = 0;
+
+        function getUserReply() {
+
+            fetch('sd/text.txt', {
+                cache: 'no-cache'
+            }).then(res => res.text()).then(res => {
+                res = res.split('[image]');
+                let text = res[0],
+                    imgurl = res[1];
+
+                if (loading) return;
+                if (text == preText) {
+                    window.count++;
+                    return loading = false;
+                } else {
+                    window.count -= 20;
+                }
+                loading = true;
+
+                document.body.innerHTML = reply(text, 'sd/' + imgurl);
+
+                preText = text;
+                setTimeout(() => loading = false, 1500);
+
+            });
+
+        };
+
+        setTimeout(() => setInterval(() => getUserReply(), 500), 2000);
+
+        setInterval(() => {
+            if (window.count > 20) {
+                randomGet();
+                window.count = 0;
+            }
+        }, 3000)
+    </script>
+</body>
+
+</html>

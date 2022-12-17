@@ -22,6 +22,23 @@ chatbot_model = hub.Module(name='plato-mini')
 tts_model = hub.Module(name='ge2e_fastspeech2_pwgan', output_dir='./data', speaker_audio='./data/shadow.wav') 
 
 
+def get_platform():
+    import platform
+    sys_platform = platform.platform().lower()
+    pf=""
+    if "windows" in sys_platform:
+        #print("Windows")
+        pf="windows"
+    elif "macos" in sys_platform:
+        #print("Mac os")
+        pf="macos"
+    elif "linux" in sys_platform:
+        #print("Linux")
+        pf="linux"
+    # else:
+    #     print("其他系统")
+    return pf
+
 def re_wav_16k(name,samplerate=16000):
     src_sig,sr = sf.read(name) 
     dst_sig = librosa.resample(src_sig,sr,samplerate)
@@ -49,26 +66,6 @@ def chatbot(text):
     data = [[text]]
     result = chatbot_model.predict(data,use_gpu=True) 
     return result[0]
-
-def get_platform():
-    import platform
-    sys_platform = platform.platform().lower()
-    pf=""
-    if "windows" in sys_platform:
-        #print("Windows")
-        pf="windows"
-    elif "macos" in sys_platform:
-        #print("Mac os")
-        pf="macos"
-    elif "linux" in sys_platform:
-        #print("Linux")
-        pf="linux"
-    # else:
-    #     print("其他系统")
-    return pf
-
-
-
 
 
 

@@ -1,3 +1,3 @@
-import utils
+import os
 
-print(utils.rank)
+print(os.path.split(os.path.abspath(__file__)))

@@ -1,8 +1,7 @@
 from playwright.sync_api import Playwright, sync_playwright, expect
-import json
 
 
-import utils
+from . import utils
 
 FILE_PATH='../data'
 
@@ -108,6 +107,18 @@ Search Videos'''
 bad_case=[k.strip() for k in bad_case.split('\n') if k.strip()!='']
 
 
+#前一天 已经爬取的数据
+pre_datas={}
+
+jsons=utils.read_dir_json_byday(FILE_PATH,-1)
+for jsons_data in jsons:
+    data=jsons_data['data']['data']
+    for d in data:
+        pre_datas[utils.get_id(d['url'])]=1
+
+print('前一天 已经爬取的数据',len(pre_datas.keys()))
+
+
 def create_html(data):
     html='''<div score="'''+str(data['score'])+'''" style="display: flex;
                 flex-direction: column;
@@ -135,7 +146,7 @@ def create_html(data):
                 line-height: 24px;">'''+data['snippet']+''' <a href="'''+data['url']+'''" style="
                 font-size: 15px;
                 font-weight: 800;
-                color: black;">  原文链接 </a></p></div>'''.replace('\n','')
+                color: black;" target="_blank">  原文链接 </a></p></div>'''.replace('\n','')
     return html
 
 
@@ -182,7 +193,11 @@ def get_keyword(keyword='web3',page=None):
             h['score']-=len([bc for bc in bad_case if bc in h['title']])
         
             h['html']=create_html(h)
-            items[uid]=h
+            
+            if not uid in pre_datas:
+                items[uid]=h
+            else:
+                print('已经有了:',h['title'])
     
     count=len(items.keys())
     print(keyword,'__',count)

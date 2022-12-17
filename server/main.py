@@ -1,44 +1,21 @@
 import random
-import hashlib
-import time
+
 import json,os,io,base64
 
-from PIL import ImageGrab,Image
+from PIL import Image
 import gradio as gr
 
+import modules.utils as utils
+import modules.http_server as http_server
 
-DEVICE="cuda"
-# MODEL_ID = "IDEA-CCNL/Taiyi-Stable-Diffusion-1B-Chinese-EN-v0.1"
-MODEL_ID="IDEA-CCNL/Taiyi-Stable-Diffusion-1B-Chinese-v0.1"
+import modules.ocr as ocr
+import modules.lip_sync as lip_sync
+import modules.tts as tts
+import modules.chatbot as chatbot
 
-# 内置的物体名词
-KEYWORDS=[k.strip() for k in 
-''' 
-蜘蛛侠
-钢铁侠
-超人
-银河护卫队
-'''.split("\n") if len(k.strip())>0]
-
-# 内置风格模版
-STYLE_PROMPTS=[k.strip() for k in 
-''' 
-，在外太空，拿着足球，脚踢足球，足球，足球!!!!!!,人物，肖像画，高细节表现力，blender渲染的概念艺术图，超清，写实照片，超现实主义，梦幻唯美，高清的图像,8k detail，脸部刻画清晰，锐化
-，长城上，看足球比赛，脚踢足球，足球，足球!!!!!!,人物，肖像画，高细节表现力，blender渲染的概念艺术图，超清，超现实主义，高清的图像,8k detail，脸部刻画清晰，锐化,写实摄影作品
-
-'''.split("\n") if len(k.strip())>0]
+import modules.taiyi_sd as taiyi_sd
 
 
-SCREE_PATH='jieping.png'
-JSON_PATH='sd/images.json'
- 
-
-ocr=None
-pipe_text2img=None
-pipe_img2img=None
-
-# httpserver
-http_server=None
 
 #上一次用户输入
 pre_text='1'
@@ -46,122 +23,19 @@ pre_text='1'
 #记录上一次用户投票
 pre_count=0
 
-#截屏位置
-screen_area=[620,380, 900,960]
-
-
-
-# 百度的ocr
-def init_ocr():
-    import ppppocr
-    global ocr
-    ocr = ppppocr.ppppOcr(model='server')
-
-def init_sd():
-    # huggingface的sd库
-    from diffusers import StableDiffusionPipeline,StableDiffusionImg2ImgPipeline
-    import torch
-
-    global pipe_text2img
-    global pipe_img2img
-    
-    # 是否过滤黄暴图 ,safety_checker=None
-    # torch.backends.cudnn.benchmark = True
-    # global sd_zh_pipe
-    # sd_zh_pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16).to(device)
-    # sd_zh_pipe = StableDiffusionPipeline.from_pretrained("IDEA-CCNL/Taiyi-Stable-Diffusion-1B-Chinese-EN-v0.1").to("cuda")
-    pipe_text2img = StableDiffusionPipeline.from_pretrained(MODEL_ID, torch_dtype=torch.float16,safety_checker=None).to(DEVICE)
-    pipe_img2img = StableDiffusionImg2ImgPipeline(**pipe_text2img.components).to(DEVICE)
-
- 
-def random_prompt_style():
-    i=random.randint(0,len(STYLE_PROMPTS)-1)
-    return ''+STYLE_PROMPTS[i]
-
-def random_keyword():
-    i=random.randint(0,len(KEYWORDS)-1)
-    return KEYWORDS[i]
-
-def load_json():
-    f = open(JSON_PATH, 'r')
-    content = f.read()
-    a = json.loads(content)
-    f.close()
-    return a
-
-def save_json(a):
-    return write_json(a,JSON_PATH)
-
-def write_json(a,file_path):
-    b = json.dumps(a)
-    f2 = open(file_path, 'w')
-    f2.write(b)
-    f2.close()
-    return
-
-def image_to_base64(image):
-    base64_str=None
-    if image:
-        # 输入为PIL读取的图片，输出为base64格式
-        byte_data = io.BytesIO()# 创建一个字节流管道
-        image.save(byte_data, format="JPEG")# 将图片数据存入字节流管道
-        byte_data = byte_data.getvalue()# 从字节流管道中获取二进制
-        base64_str = base64.b64encode(byte_data).decode("ascii")# 二进制转base64
-    return base64_str
-
-def base64_to_image(base64_str):
-    image=None
-    if base64_str:
-        # 输入为base64格式字符串，输出为PIL格式图片
-        byte_data = base64.b64decode(base64_str) # base64转二进制
-        image = Image.open(io.BytesIO(byte_data)) # 将二进制转为PIL格式图片
-    return image
-    
-
+  
 
 def create_http_server(style_prompt,guide, steps, width, height, image_in, strength):
-    global http_server
-    if http_server==None:
-        http_server=os.popen('python3 -m http.server')
-        os.popen('start http://localhost:8000/magic-card.html')
+    http_server.start()
     return update_pipe_opts(style_prompt,guide, steps, width, height, image_in, strength)
 
-def stop_http_server():
-    global http_server
-    if http_server:
-        http_server.close()
-
-def shotscreen():
-    global screen_area
-    img = ImageGrab.grab(bbox=(screen_area[0],screen_area[1], screen_area[2],screen_area[3])) #四个数字分别是要截屏的四个角
-    img.save(SCREE_PATH) #保存图片
-    return img
-
-#手动配置截屏区域
-def shotscreen_setup(x,y,w,h):
-    global screen_area
-    screen_area= [x,y,w,h]
-    img=shotscreen()
-    return img
-
-#hash值
-def md5(t):
-    return hashlib.md5(t.encode(encoding='UTF-8')).hexdigest()
 
 
-def readtext():
-    global ocr
-    if ocr==None:
-        init_ocr()
-    image_path = SCREE_PATH
-    dt_boxes, rec_res = ocr.ocr(image_path)
-    return rec_res
 
 #获取用户输入
 def get_user_input():
     #截屏
-    im=shotscreen()
-    result = readtext()
+    im,result = ocr.start()
 
     res=[]
     if result!=None:
@@ -228,73 +102,38 @@ def count_user_feedback(keyword):
             is_count=True
     return count
 
-def infer_text2img_for_auto(prompt):
-    global pipe_opts
-    im=infer_text2img(prompt,
-    pipe_opts["style_prompt"],
-    pipe_opts["guide"],
-    pipe_opts["steps"],
-    pipe_opts["width"],
-    pipe_opts["height"],
-    base64_to_image(pipe_opts["image_in"]),
-    pipe_opts["strength"]
-    )
-    return im
 
-def update_pipe_opts(style_prompt,guide, steps, width, height, image_in, strength):
-    global pipe_opts
-    # print(image_in)
-    pipe_opts={
-        "style_prompt":style_prompt,
-        "guide":guide,
-        "steps":steps,
-        "width":width,
-        "height":height,
-        "image_in":image_to_base64(image_in),
-        "strength":strength
-    }
-    return pipe_opts
 
-def infer_text2img(prompt, style_prompt,guide, steps, width, height, image_in, strength):
-    global pipe_text2img
-    global pipe_img2img
-
-    if style_prompt!=None:
-        prompt=prompt+','+style_prompt
-    if pipe_text2img==None:
-        init_sd()
-    if image_in is not None:
-        init_image = image_in.convert("RGB").resize((width, height))
-        output = pipe_img2img(prompt, 
-                                        init_image=init_image, 
-                                        strength=strength, 
-                                        width=width, 
-                                        height=height, 
-                                        guidance_scale=guide, 
-                                        num_inference_steps=steps)
+def tts_sync(question,wav_file_input,radio_input):
+    if radio_input== "asr-chatbot":
+        # speech_recognize(wav_file_input)
+        print('speech_recognize')
+    elif radio_input== "text-chatbot":
+        #
+        text=chatbot.start(question)
+        wav_file = tts.start(text)
+        # print(text)
+    elif radio_input=="tts":
+        wav_file = tts.start(question)
+        text=question
+        # print(wav_file)
     else:
-        output = pipe_text2img(prompt, width=width, height=height, guidance_scale=guide, num_inference_steps=steps,)
-    image = output.images[0]
-    return image
+        wav_file=utils.write_wav(wav_file_input[1],wav_file_input[0],'./data/wav_file.wav')
+        text=question
+    #TODO 改造成 接受录音，返回答案
+    # asr - > chatbot ->tts
+    
+    #wav_file=write_wav(wav_file_input[1],wav_file_input[0])
+    frames=lip_sync.start(wav_file)
+ 
+    frames['question']=question
+    frames['text']=text
+    return wav_file,frames
 
-def infer_inpaint(prompt, guide, steps, width, height, image_in): 
-    init_image = image_in["image"].convert("RGB").resize((width, height))
-    mask = image_in["mask"].convert("RGB").resize((width, height))
-
-    output = pipe_inpaint(prompt, \
-                        init_image=init_image, mask_image=mask, \
-                        width=width, height=height, \
-                        guidance_scale=7.5, num_inference_steps=20)
-    image = output.images[0]
-    return image
-
-
-# init_ocr()
-# init_sd()
 
 
 with gr.Blocks(css="main.css") as demo:
-    examples = [[random_keyword(),x] for x in STYLE_PROMPTS]
+    examples = [[taiyi_sd.random_keyword(),x] for x in taiyi_sd.STYLE_PROMPTS]
     # 截图
     with gr.Row(scale=1,):
         with gr.Column(scale=1, ):
@@ -319,6 +158,12 @@ with gr.Blocks(css="main.css") as demo:
                 strength = gr.Slider(0, 1.0, value = 0.8, step = 0.05, label = '参考图改变程度(strength)')
             with gr.Row(scale=0.5 ):
                 image_in = gr.Image(source='upload', elem_id="image_upload", type="pil", label="参考图（非必须）(ref)")
+
+            with gr.Row(scale=0.5):
+                wav_file_input = gr.Audio(label="录音",type="numpy")
+                tts_radio=gr.Radio(["asr-chatbot", "text-chatbot","tts","lip"])
+                tts_lip_btn = gr.Button("语音生成")
+                
             
         with gr.Column(scale=1, ):
             
@@ -339,26 +184,26 @@ with gr.Blocks(css="main.css") as demo:
         json_out=gr.JSON(label='结果')    
             
     with gr.Row():     
-        ex = gr.Examples(examples, fn=infer_text2img, inputs=[keyword,style_input, guide, steps, width, height], outputs=image_out)
+        ex = gr.Examples(examples, fn=taiyi_sd.infer_text2img, inputs=[keyword,style_input, guide, steps, width, height], outputs=image_out)
         # with gr.Column(scale=1, ):
         #     image_in = gr.Image(source='upload', tool='sketch', elem_id="image_upload", type="pil", label="Upload")
         #     inpaint_prompt = gr.Textbox(label = '提示词(prompt)')
         #     inpaint_btn = gr.Button("图像编辑(Inpaint)")
             # img2img_prompt = gr.Textbox(label = '提示词(prompt)')
             # img2img_btn = gr.Button("图像编辑(Inpaint)")
-        use_pipe_opts_btn.click(fn = infer_text2img_for_auto, 
+        use_pipe_opts_btn.click(fn = taiyi_sd.infer_text2img_for_auto, 
         inputs =keyword, 
         outputs = image_out,api_name="infer_text2img_for_auto")
 
-        submit_btn.click(fn = infer_text2img, 
+        submit_btn.click(fn = taiyi_sd.infer_text2img, 
         inputs = [keyword,style_input, guide, steps, width, height, image_in, strength], 
         outputs = image_out,api_name="infer_text2img")
 
-        update_pipe_opts_btn.click(fn = update_pipe_opts, 
+        update_pipe_opts_btn.click(fn = taiyi_sd.update_pipe_opts, 
         inputs = [style_input, guide, steps, width, height, image_in, strength], 
         outputs = json_out)
 
-        shotscreen_btn.click(fn=shotscreen_setup,inputs =[screen_x,screen_y,screen_width,screen_height],
+        shotscreen_btn.click(fn=ocr.shotscreen_setup,inputs =[screen_x,screen_y,screen_width,screen_height],
         outputs=image_out,
         api_name="shotscreen")
 
@@ -378,6 +223,11 @@ with gr.Blocks(css="main.css") as demo:
         inputs =[keyword],
         outputs=json_out,
         api_name="count_user_feedback")
+
+        tts_lip_btn.click(fn=tts_sync,
+        inputs=[keyword,wav_file_input,tts_radio],
+        outputs=[wav_file_input,json_out],
+        api_name="audio_lip")
 
         # inpaint_btn.click(fn = infer_inpaint, inputs = [inpaint_prompt, width, height, image_in], outputs = image_out)
         # img2img_btn.click(fn = infer_img2img, inputs = [img2img_prompt, width, height, image_in], outputs = image_out)
