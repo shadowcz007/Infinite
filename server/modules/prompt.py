@@ -1,5 +1,4 @@
  
-from ast import Try
 from diffusers import StableDiffusionPipeline
 import torch
 # ,safety_checker=None
@@ -10,9 +9,10 @@ sd_zh_pipe.to('cuda')
 
 
 from itertools import product
-import os
-import hashlib
+
 import argparse
+import utils
+
 
 def split_text(text,num=2):
     texts=text.split(',')
@@ -42,16 +42,9 @@ def split_text(text,num=2):
     return result
 
 
-def create_id(text):
-    return hashlib.md5(text.encode(encoding='UTF-8')).hexdigest()
-        
-
 def mkdir(output,id):
     pn=output+'/'+id
-    try:
-        os.mkdir(pn)
-    except:
-        print('---mkdir---')
+    utils.mkdir(pn)
     return pn
 
 
@@ -65,8 +58,9 @@ def create_image_and_save(file_path,items=[],seed=1024):
 
 
 def start(text,file_path,num=2,seed=1024):
-    id=create_id(text)
+    id=utils.get_id(text)
     output_file_path=mkdir(file_path,id)
+    print(output_file_path)
     items =split_text(text,num)
     create_image_and_save(output_file_path,items,seed)
 

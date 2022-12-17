@@ -1,6 +1,10 @@
 from playwright.sync_api import Playwright, sync_playwright, expect
-import json,hashlib
-from datetime import datetime
+import json
+
+
+import utils
+
+FILE_PATH='../data'
 
 PROXY_HTTP = "http://127.0.0.1"
 # PROXY_SOCKS5 = "socks5://127.0.0.1:51837"
@@ -34,6 +38,7 @@ XR
 虚拟现实 
 WebXR 
 Artificial intelligence 
+人工智能
 脑机接口 
 AI大模型 
 游戏引擎'''
@@ -87,11 +92,15 @@ weekly report
 今日更多新鲜事
 项目报道
 周报
+新闻首页
 Bing 词典
 搜索 图片
 _哔哩哔哩
+行业情报
 搜索 视频
 搜索 图片
+量子位
+金财互联
 Access Denied
 Search Images
 Search Videos'''
@@ -130,12 +139,7 @@ def create_html(data):
     return html
 
 
-def rank(items):
-    def my_func(e):
-        return e['score']
 
-    items.sort(reverse=True, key=my_func)
-    return items
 
 
 def get_keyword(keyword='web3',page=None):
@@ -167,7 +171,7 @@ def get_keyword(keyword='web3',page=None):
             cards
         ''')
         for h in html:
-            uid=hashlib.new('md5', h['url'].encode('utf-8')).hexdigest()
+            uid=utils.get_id(h['url'])
             h['keyword']=keyword
             h['score']=1 if keyword.lower() in h['title'].lower() else 0
             # 评分
@@ -183,8 +187,7 @@ def get_keyword(keyword='web3',page=None):
     count=len(items.keys())
     print(keyword,'__',count)
 
-    d = datetime.today()
-    d = datetime.strftime(d,'%Y-%m-%d %H:%M:%S')
+    d = utils.get_date_str()
 
     res={
         "keyword":keyword,
@@ -194,7 +197,7 @@ def get_keyword(keyword='web3',page=None):
         "htmls":[]
     }
 
-    res["data"]=rank([x for x in items.values()])
+    res["data"]=utils.rank([x for x in items.values()])
 
     for r in res['data']:
         res['html']+=r['html']
@@ -202,11 +205,9 @@ def get_keyword(keyword='web3',page=None):
             "score":r['score'],
             "html":r['html']
         })
-   
-    jsonString = json.dumps(res, ensure_ascii=False)
-    jsonFile = open("./data/data_"+keyword+"_"+str(res["count"])+"_"+(d.split(' ')[0])+".json", "w")
-    jsonFile.write(jsonString)
-    jsonFile.close()
+    
+    utils.write_json(res,FILE_PATH+"/data_"+keyword+"_"+str(res["count"])+"_"+(d.split(' ')[0])+".json")
+  
     return res['htmls']
 
 def run(playwright: Playwright) -> None:
@@ -214,8 +215,7 @@ def run(playwright: Playwright) -> None:
     context = browser.new_context()
     page = context.new_page()
 
-    d = datetime.today()
-    d = datetime.strftime(d,'%Y-%m-%d %H:%M:%S')
+    d=utils.get_date_str()
 
     count_keywords=[]
 
@@ -232,17 +232,16 @@ def run(playwright: Playwright) -> None:
         page.wait_for_timeout(1500)
 
     html="<p>"+(d.split(' ')[0])+"_"+str(len(htmls_data))+"条 <br>"+",".join(count_keywords)+"</p>"
-    html+="".join([h['html'] for h in rank(htmls_data)])
+    html+="".join([h['html'] for h in utils.rank(htmls_data)])
 
     html='''<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>'''+(d.split(' ')[0])+'''</title>
 </head><body>'''+html +'''</body></html>'''
+    
 
-    f = open("./data/"+(d.split(' ')[0])+"_"+str(len(count_keywords))+".html", "w")
-    f.write(html)
-    f.close()
-
+    utils.write_file(html,FILE_PATH+"/"+(d.split(' ')[0])+"_"+str(len(count_keywords))+".html")
+   
     # # ---------------------
     context.close()
     browser.close()
