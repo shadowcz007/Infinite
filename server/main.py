@@ -14,7 +14,7 @@ import modules.tts as tts
 import modules.chatbot as chatbot
 
 import modules.taiyi_sd as taiyi_sd
-
+import modules.pai_painter as pai_painter
 
 
 #上一次用户输入
@@ -27,7 +27,7 @@ pre_count=0
 
 def create_http_server(style_prompt,guide, steps, width, height, image_in, strength):
     http_server.start()
-    return update_pipe_opts(style_prompt,guide, steps, width, height, image_in, strength)
+    return taiyi_sd.update_pipe_opts(style_prompt,guide, steps, width, height, image_in, strength)
 
 
 
@@ -105,6 +105,7 @@ def count_user_feedback(keyword):
 
 
 def tts_sync(question,wav_file_input,radio_input):
+    # print(question)
     if radio_input== "asr-chatbot":
         # speech_recognize(wav_file_input)
         print('speech_recognize')
@@ -129,6 +130,12 @@ def tts_sync(question,wav_file_input,radio_input):
     frames['question']=question
     frames['text']=text
     return wav_file,frames
+
+
+def pai_painter_start(t):
+    ims=pai_painter.start(t)
+    im=utils.random_text(ims)
+    return im.argument,im
 
 
 
@@ -163,7 +170,9 @@ with gr.Blocks(css="main.css") as demo:
                 wav_file_input = gr.Audio(label="录音",type="numpy")
                 tts_radio=gr.Radio(["asr-chatbot", "text-chatbot","tts","lip"])
                 tts_lip_btn = gr.Button("语音生成")
-                
+
+            with gr.Row(scale=0.5):
+                pai_painter_btn = gr.Button("pai_painter生成")
             
         with gr.Column(scale=1, ):
             
@@ -198,6 +207,11 @@ with gr.Blocks(css="main.css") as demo:
         submit_btn.click(fn = taiyi_sd.infer_text2img, 
         inputs = [keyword,style_input, guide, steps, width, height, image_in, strength], 
         outputs = image_out,api_name="infer_text2img")
+
+        pai_painter_btn.click(fn=pai_painter_start,
+        inputs=keyword,
+        outputs=[json_out,image_out],
+        api_name="pai_painter")
 
         update_pipe_opts_btn.click(fn = taiyi_sd.update_pipe_opts, 
         inputs = [style_input, guide, steps, width, height, image_in, strength], 

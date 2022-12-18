@@ -29,6 +29,10 @@ def rank(items,key='score',reverse=True):
     items.sort(reverse=reverse, key=my_func)
     return items
 
+def load_file(filepath):
+    with open( filepath, 'r' ) as f:
+        return f.read()
+
 # 保存到本地
 def write_file(text,filepath):
     f = open(filepath, "w",encoding='utf-8')

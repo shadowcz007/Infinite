@@ -1,7 +1,10 @@
 from playwright.sync_api import Playwright, sync_playwright, expect
 
 
-from . import utils
+try:
+    from . import utils
+except:
+    import utils
 
 FILE_PATH='../data'
 
@@ -30,9 +33,9 @@ meta-human
 web3 
 nft 
 Stable Diffusion 
-VR 
-AR
-XR
+Extended Reality
+Virtual Reality
+Augmented Reality
 增强现实 
 虚拟现实 
 WebXR 
@@ -186,9 +189,9 @@ def get_keyword(keyword='web3',page=None):
             h['keyword']=keyword
             h['score']=1 if keyword.lower() in h['title'].lower() else 0
             # 评分
-            h['score']+=1 if len(h['imgurl'])>0 else 0
+            h['score']+=3 if len(h['imgurl'])>0 else 0
             #不错的网站
-            h['score']+=len([site for site in good_sites if site in h['url']])
+            h['score']+=len([site for site in good_sites if site in h['url']])*10
             #一些不好的词
             h['score']-=len([bc for bc in bad_case if bc in h['title']])
         

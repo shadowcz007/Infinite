@@ -1,17 +1,17 @@
-import paddlehub as hub
+from paddlenlp import Taskflow
 
-chatbot_model=None
+dialogue=None
 
 def init():
-    global chatbot_model
-    if chatbot_model==None:
-        chatbot_model = hub.Module(name='plato-mini')
+    global dialogue
+    if dialogue==None:
+        dialogue = Taskflow("dialogue")
 
 
 def start(text):
-    global chatbot_model
+    global dialogue
     init()
-    data = [[text]]
-    result = chatbot_model.predict(data,use_gpu=True) 
+    data = [text]
+    result = dialogue(data)
     return result[0]
 

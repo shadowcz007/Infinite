@@ -87,7 +87,7 @@
             <div id="chat"></div>
         </div>
         <model-viewer src="./assets/model/base-shadow.glb" ar ar-modes="webxr scene-viewer quick-look" camera-controls poster="./assets/image/poster.webp" autoplay animation-name="Idle" shadow-intensity="1" autoplay style="background-color: unset;">
-            <button class="Hotspot" id="hotspot-button-hello" slot="hotspot-1" data-position="0.16843323423898407m 26m -0.007215726788095456m" data-normal="-0.3923983733134677m 0.025428432508705207m 0.9194438054830186m" data-visibility-attribute="visible" style="width: 88px;height: 48px;">
+            <button class="Hotspot" id="hotspot-button-hello" slot="hotspot-1" data-position="0.16843323423898407m 20m -0.007215726788095456m" data-normal="-0.3923983733134677m 0.025428432508705207m 0.9194438054830186m" data-visibility-attribute="visible" style="width: 88px;height: 48px;">
                     <div class="HotspotAnnotation" id="hotspot-hello">hi</div>
                 </button>
             <div class="progress-bar hide" slot="progress-bar">
@@ -228,7 +228,7 @@
             constructor(opts) {
                 this.wavesurfer = WaveSurfer.create({
                     container: document.querySelector('#waveform'),
-                    barMinHeight: 10,
+                    barMinHeight: 150,
                     cursorWidth: 0,
                     interact: false
                 });
@@ -253,7 +253,7 @@
         }
 
         class Recognition {
-            constructor(infoDiv, callback, matchKeys = ['找图', '消息', '元宇宙']) {
+            constructor(callback, matchKeys = ['找图', '消息', '元宇宙']) {
                 this._ = new webkitSpeechRecognition();
                 this.state = 0;
                 // 配置设置以使每次识别都返回连续结果
@@ -267,11 +267,15 @@
 
                 let that = this;
 
+                this.callback = callback;
+
                 this._.onerror = function(e) {
                     if (that.isDev) console.log('recognition++' + e.error)
                         // console.log('recognition++onerror');
                         // error 并不会导致自动end，end是有事件的，所以只需在end的时候再start即可
-                    if (infoDiv) infoDiv.innerText = e.error;
+                    if (that.callback) that.callback(null);
+                    console.log('!!recognition++onerror:', e.error)
+                        // if (infoDiv) infoDiv.innerText = e.error;
                 }
 
                 // 正确识别单词或短语时的事件处理程序
@@ -280,10 +284,11 @@
                     let text = Array.from(event.results, r => r[0]).pop().transcript;
 
                     if (that.isDev) console.log('recognition++onresult', text);
+                    if (that.callback) that.callback(text);
 
                     //TODO 
+                    that.abort();
                     // if (matchKeys.filter(k => text.match(k)).length > 0 && callback) callback(text);
-                    if (callback) callback(text);
 
                 };
 
@@ -332,8 +337,9 @@
 
         // 通过声音来控制 isPlay 的播放与暂停
         class Human {
-            constructor() {
-                this.modelViewer = document.querySelector('model-viewer');
+            constructor(opts) {
+                this.infoDiv = opts.infoDiv;
+                this.modelViewer = opts.modelViewer;
                 this.modelViewer.animationCrossfadeDuration = 1000;
                 this.isPlay = false;
                 this.availableAnimations = [
@@ -369,6 +375,9 @@
                 this.idle();
             }
 
+            info(t) {
+                if (this.infoDiv) this.infoDiv.innerText = t;
+            }
             hardPlay() {
                 // 动作播放,当有嘴型在播的时候，可以强制播放动作
                 if (this.action && this[this.action]) {
@@ -389,11 +398,13 @@
             }
 
             idle() {
+                this.info('Idle');
                 console.log('###Idle')
                 this.modelViewer.animationName = 'Idle';
             }
 
             thinking() {
+                this.info('thinking');
                 console.log('###thinking - Gesture-Head')
                 this.modelViewer.animationName = 'Gesture-Head';
                 this.modelViewer.play({
@@ -402,6 +413,7 @@
             }
 
             listening() {
+                this.info('listening');
                 console.log('###listening')
                 this.modelViewer.animationName = 'Looking';
                 this.modelViewer.play({
@@ -410,6 +422,7 @@
             }
 
             greeting() {
+                this.info('greeting');
                 console.log('###greeting')
                 this.modelViewer.animationName = 'Gesture--Greeting';
                 this.modelViewer.play({
@@ -419,26 +432,36 @@
 
 
             talk(json = {}) {
-                console.log('###Talk')
-                this.modelViewer.animationName = 'Talk';
-                let object = this.faceMesh;
-                let data = {...json
-                };
-
-                let values = new Array(object.children[1].morphTargetInfluences.length).fill(
-                    0
-                )
-
-                for (let k in data) {
-
-                    let index = object.children[1].morphTargetDictionary[k];
-                    //   console.log(values[index],data[k])
-                    if (data[k] != undefined) {
-                        values[index] = data[k]
+                    this.info('Talk');
+                    console.log('###Talk')
+                    this.modelViewer.animationName = 'Talk';
+                    let object = this.faceMesh;
+                    let data = {...json
                     };
+
+                    let values = new Array(object.children[1].morphTargetInfluences.length).fill(
+                        0
+                    )
+
+                    for (let k in data) {
+
+                        let index = object.children[1].morphTargetDictionary[k];
+                        //   console.log(values[index],data[k])
+                        if (data[k] != undefined) {
+                            values[index] = data[k]
+                        };
+                    }
+                    // console.log(object,values)
+                    object.children[1].morphTargetInfluences = [...values];
                 }
-                // console.log(object,values)
-                object.children[1].morphTargetInfluences = [...values];
+                // TODO 自动计算眨眼
+            eyeFrames(n) {
+                let sd = [...Array.from(new Array(12), (a, i) => ({
+                    eyesClosed: i / 18
+                })), ...Array.from(new Array(12), (a, i) => ({
+                    eyesClosed: 1 - i / 12
+                }))];
+                return sd
             }
 
             updateShadowIntensity(n) {
@@ -457,23 +480,79 @@
         // 驱动数字人-播放声音和动作
         class Control {
             constructor(opts) {
+
+                this.recognition = opts.recognition;
+                this.chatWindow = opts.chatWindow;
+                this.human = opts.human;
+
+                this.human.init();
+
                 // 播放结束后执行的一些函数
                 this.finish = [];
                 let that = this;
+                that.isPlay = false;
                 this.sound = new Sound({
                     startPlay: () => {
                         // 动作播放,当有嘴型在播的时候，可以强制播放动作
-                        window.human.hardPlay();
+                        that.human.hardPlay();
                         that.next();
-                        window.recognition.abort();
+                        that.recognition.abort();
                     }
-                })
+                });
+
+                this.chatWindow.inputFun = t => {
+                    if (that.human && !that.isPlay) userInputByText(t);
+                }
+
+                this.recognition.callback = (text) => {
+
+                    if (!that.isPlay && text) {
+                        that.isPlay = true;
+                        that.human.thinking();
+                        userInputByText(text);
+                    }
+
+                }
+
+                (() => {
+                    const time = performance.now();
+                    const app = document.querySelector('#app');
+                    let color = Math.ceil(Math.random() * 360);
+                    app.setAttribute('data-color', color);
+                    let preTimeA = (new Date()).getTime();
+                    const animate = (now) => {
+                        // 当在播放嘴型的时候，禁止背景变化，提高性能
+                        // console.log((new Date()).getTime() - preTimeA)
+                        if (((new Date()).getTime() - preTimeA > 1200) && (that.human && !that.human.isPlay || that.human && that.human.isPlay == undefined)) {
+                            preTimeA = (new Date()).getTime();
+                            // bg 动画
+                            let color = Math.ceil(app.getAttribute('data-color'));
+                            color++;
+                            if (color > 360) color = 0;
+                            app.setAttribute('data-color', color);
+                            app.style.background = `linear-gradient(hsl(${color}deg 100% 97%), hsl(${360-color}deg 100% 89%))`;
+                        }
+                        that.human.updateShadowIntensity(that.human.oscillate(0, 2, 4000, now - time));
+                        requestAnimationFrame(animate);
+                    };
+
+                    animate();
+                })();
+
             }
+
+            init() {
+                let that = this;
+                this.human.action = 'greeting';
+                userInputByText('hello');
+                that.finish.push(() => that.recognition.init());
+            }
+
             update(data) {
                 this.data = data;
                 this.preTime = (new Date()).getTime();
                 this.fps = data.fps;
-                this.maxFrameIndex = data.frames.length - 1;
+                this.maxBlendshapeIndex = data.blendshape.length - 1;
                 this.currentTime = 0;
                 this.duration = data.duration * 1000;
 
@@ -481,12 +560,21 @@
 
                 // 在聊天界面上显示出文字
                 if (data.text) {
-                    window.chatWindow.reply(data.text);
+                    this.chatWindow.reply(data.text);
                 }
             }
 
             start(data) {
-                this.update(data);
+                let eyeFrames = this.human.eyeFrames();
+
+                let blendshape = data.frames.length > eyeFrames.length ? Array.from(data.frames, (f, index) => ({...f.viseme,
+                    ...eyeFrames[index]
+                })) : Array.from(data.frames, (f, index) => ({...f.viseme
+                }));
+
+                this.update({...data,
+                    blendshape
+                });
                 if (this.data.base64) {
                     this.sound.load(this.data.base64);
                 }
@@ -498,10 +586,10 @@
                 if (t - this.preTime > 1000 / this.fps) {
 
                     this.currentTime += t - this.preTime;
-                    let index = Math.min(this.maxFrameIndex, Math.ceil(this.maxFrameIndex * this.currentTime / this.duration) - 1);
+                    let index = Math.min(this.maxBlendshapeIndex, Math.ceil(this.maxBlendshapeIndex * this.currentTime / this.duration) - 1);
                     //   console.log(index,window.currentTime,window.duration,data.frames[index]);
                     // 播放
-                    window.human.talk(this.data.frames[index].viseme);
+                    that.human.talk(this.data.blendshape[index]);
                     this.preTime = t;
 
                 };
@@ -511,15 +599,15 @@
                     });
                 } else {
                     //嘴型动画播完了
-                    window.human.action = null;
+                    that.human.action = null;
                     this.isPlay = false;
-                    window.human.idle();
+                    that.human.idle();
                     console.log('###Finished!');
                     for (const f of this.finish) {
                         f();
                     };
                     this.finish = [];
-                    window.recognition.restore();
+                    this.recognition.restore();
                 };
             }
 
@@ -530,64 +618,27 @@
 
 
         function init() {
-            let infoDiv = document.querySelector('#hotspot-hello')
-            document.querySelector('#hotspot-button-hello').addEventListener('click', () => {
-                window.human.action = 'greeting';
-                userInputByText('hello');
-                control.finish.push(() => window.recognition.init());
+            const human = new Human({
+                infoDiv: document.querySelector('#hotspot-hello'),
+                modelViewer: document.querySelector('model-viewer')
             });
 
-            window.human = new Human();
-            window.human.init();
-
-            window.chatWindow = new ChatWindow({
+            const chatWindow = new ChatWindow({
                 chatUI: document.getElementById("chat"),
-                inputUI: document.querySelector('#user_input textarea'),
-                inputFun: t => {
-                    if (window.human && !window.control.isPlay) userInputByText(t);
-                }
+                inputUI: document.querySelector('#user_input textarea')
             });
 
-            const recognitionCallback = (text) => {
-                if (!window.control.isPlay && text) {
-                    window.control.isPlay = true;
-                    window.human.thinking();
-                    if (infoDiv) infoDiv.innerText = 'thinking';
-                    window.recognition.abort();
-                    userInputByText(text);
-                }
-            }
+            const recognition = new Recognition();
 
+            window.control = new Control({
+                recognition: recognition,
+                chatWindow: chatWindow,
+                human: human
+            });
 
-            window.recognition = new Recognition(infoDiv, recognitionCallback);
-
-
-            window.control = new Control();
-
-            (() => {
-                const time = performance.now();
-                const app = document.querySelector('#app');
-                let color = Math.ceil(Math.random() * 360);
-                app.setAttribute('data-color', color);
-                let preTimeA = (new Date()).getTime();
-                const animate = (now) => {
-                    // 当在播放嘴型的时候，禁止背景变化，提高性能
-                    // console.log((new Date()).getTime() - preTimeA)
-                    if (((new Date()).getTime() - preTimeA > 1200) && (window.human && !window.human.isPlay || window.human && window.human.isPlay == undefined)) {
-                        preTimeA = (new Date()).getTime();
-                        // bg 动画
-                        let color = Math.ceil(app.getAttribute('data-color'));
-                        color++;
-                        if (color > 360) color = 0;
-                        app.setAttribute('data-color', color);
-                        app.style.background = `linear-gradient(hsl(${color}deg 100% 97%), hsl(${360-color}deg 100% 89%))`;
-                    }
-                    window.human.updateShadowIntensity(window.human.oscillate(0, 2, 4000, now - time));
-                    requestAnimationFrame(animate);
-                };
-
-                animate();
-            })();
+            document.querySelector('#hotspot-button-hello').addEventListener('click', () => {
+                window.control.init()
+            });
 
         };
 
@@ -612,12 +663,12 @@
             fetchUserInputFromAudio(text).then(data => {
                 try {
                     if (data) {
-                        console.log(typeof(data))
+                        // console.log(typeof(data))
                         control.start({...data[1]
                         })
                     }
                 } catch (error) {
-                    window.recognition.restore();
+                    window.control.recognition.restore();
                 }
             })
         }
@@ -627,12 +678,12 @@
             fetchUserInputFromText(text).then(data => {
                 try {
                     if (data) {
-                        console.log(typeof(data))
+                        // console.log(typeof(data))
                         control.start({...data[1]
                         })
                     }
                 } catch (error) {
-                    window.recognition.restore();
+                    window.control.recognition.restore();
                 }
 
             })
@@ -640,14 +691,14 @@
 
         // 上传音频，返回动画
         function audio2LipSync() {
-            window.human.idle();
+            window.control.human.idle();
             openAudioFile().then(base64 => {
                 fetchLipData(base64).then(res => {
                     if (res) {
                         let data = {...res[1],
                             base64
                         };
-                        control.start(data);
+                        window.control.start(data);
                     }
 
                 });
@@ -666,7 +717,7 @@
         async function test1() {
             control.start()
             for (let index = 0; index < 200; index++) {
-                window.human.random();
+                window.control.human.random();
                 await sleep(1000);
             }
         }
@@ -674,7 +725,7 @@
         // 2 测试 正在播放音频，同时在录音识别
         function test2() {
             control.start()
-            window.recognition.isDev = true;
+            window.control.recognition.isDev = true;
         }
 
         // test1();
