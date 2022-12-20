@@ -77,8 +77,15 @@ www.vrtuoluo.cn
 news.nweon.com
 hub.baai.ac.cn
 zhidx.com
+about.fb.com
+geekpark.net
         '''
 good_sites=[k.strip() for k in good_sites.split('\n') if k.strip()!='']
+
+bad_sites='''
+www.msn.com
+'''
+bad_sites=[k.strip() for k in bad_sites.split('\n') if k.strip()!='']
 
 bad_case='''直播
 活动
@@ -113,13 +120,15 @@ bad_case=[k.strip() for k in bad_case.split('\n') if k.strip()!='']
 #前一天 已经爬取的数据
 pre_datas={}
 
-jsons=utils.read_dir_json_byday(FILE_PATH,-1)
-for jsons_data in jsons:
-    data=jsons_data['data']['data']
-    for d in data:
-        pre_datas[utils.get_id(d['url'])]=1
+for i in range(-7,0):
+    jsons=utils.read_dir_json_byday(FILE_PATH,i)
+    for jsons_data in jsons:
+        data=jsons_data['data']['data']
+        print(jsons_data['filename'])
+        for d in data:
+            pre_datas[utils.get_id(d['url'])]=1
 
-print('前一天 已经爬取的数据',len(pre_datas.keys()))
+print('前7天 已经爬取的数据',len(pre_datas.keys()))
 
 
 def create_html(data):
@@ -187,13 +196,15 @@ def get_keyword(keyword='web3',page=None):
         for h in html:
             uid=utils.get_id(h['url'])
             h['keyword']=keyword
-            h['score']=1 if keyword.lower() in h['title'].lower() else 0
+            h['score']=10 if keyword.lower() in h['title'].lower() else 0
             # 评分
-            h['score']+=3 if len(h['imgurl'])>0 else 0
+            h['score']+=6 if len(h['imgurl'])>0 else 0
             #不错的网站
-            h['score']+=len([site for site in good_sites if site in h['url']])*10
+            h['score']+=len([site for site in good_sites if site in h['url']])*20
             #一些不好的词
-            h['score']-=len([bc for bc in bad_case if bc in h['title']])
+            h['score']-=len([bc for bc in bad_case if bc in h['title']])*2
+            #不好的网站
+            h['score']-=len([site for site in bad_sites if site in h['url']])*10
         
             h['html']=create_html(h)
             

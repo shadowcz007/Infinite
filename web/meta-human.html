@@ -273,7 +273,10 @@
                     if (that.isDev) console.log('recognition++' + e.error)
                         // console.log('recognition++onerror');
                         // error 并不会导致自动end，end是有事件的，所以只需在end的时候再start即可
-                    if (that.callback) that.callback(null);
+                    if (that.callback) that.callback({
+                        success: false,
+                        data: e.error
+                    });
                     console.log('!!recognition++onerror:', e.error)
                         // if (infoDiv) infoDiv.innerText = e.error;
                 }
@@ -284,7 +287,10 @@
                     let text = Array.from(event.results, r => r[0]).pop().transcript;
 
                     if (that.isDev) console.log('recognition++onresult', text);
-                    if (that.callback) that.callback(text);
+                    if (that.callback) that.callback({
+                        success: true,
+                        data: text
+                    });
 
                     //TODO 
                     that.abort();
@@ -331,6 +337,69 @@
             }
             restore() {
                 if (this.state != 1) this._.start();
+            }
+        }
+
+        class Ocr {
+            constructor(callback) {
+                this.callback = callback;
+                this.state = 0;
+                this.subjectKeyword = null;
+                this.baseUrl = window.location.protocol + '//' + window.location.hostname + ":7860/run/get_user_input_and_prompt";
+            }
+            init() {
+                if (this.state == 0) this.getNewSubjectTimeout();
+            }
+            abort() {
+                this.state = 2;
+            }
+            restore() {
+                this.state = 1;
+            }
+
+            // 
+            getNewSubject() {
+                    return mixFetch(this.baseUrl, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                data: []
+                            })
+                        })
+                        .then(r => r.json())
+                        .then(
+                            r => {
+                                let data = r.data;
+                                if (data) {
+                                    let text = data[0];
+                                    return text
+                                }
+
+                            }
+                        )
+                }
+                // 通过ocr获取用户留言
+            getNewSubjectTimeout() {
+                let that = this;
+                that.state = 1;
+                that.getNewSubject().then(tx => {
+                    console.log('----getNewSubject', tx)
+                    if (tx) {
+                        let newSubject = tx;
+                        if (newSubject != that.subjectKeyword) {
+                            that.subjectKeywordNext = newSubject;
+
+                            if (that.state != 2 && that.callback) that.callback(newSubject);
+                        }
+                        /* window.subjectKeyword = tx.pop(); */
+                    }
+                    that.setTimeoutId = setTimeout(() => {
+                        that.getNewSubjectTimeout();
+                        // that.state = 1;
+                    }, 3000);
+                })
             }
         }
 
@@ -484,6 +553,7 @@
                 this.recognition = opts.recognition;
                 this.chatWindow = opts.chatWindow;
                 this.human = opts.human;
+                this.ocr = opts.ocr;
 
                 this.human.init();
 
@@ -492,27 +562,15 @@
                 let that = this;
                 that.isPlay = false;
                 this.sound = new Sound({
-                    startPlay: () => {
-                        // 动作播放,当有嘴型在播的时候，可以强制播放动作
-                        that.human.hardPlay();
-                        that.next();
-                        that.recognition.abort();
-                    }
+                    startPlay: () => that.playHuman()
                 });
 
                 this.chatWindow.inputFun = t => {
                     if (that.human && !that.isPlay) userInputByText(t);
                 }
 
-                this.recognition.callback = (text) => {
+                this.isRunRecognition = opts.isRunRecognition || true;
 
-                    if (!that.isPlay && text) {
-                        that.isPlay = true;
-                        that.human.thinking();
-                        userInputByText(text);
-                    }
-
-                }
 
                 (() => {
                     const time = performance.now();
@@ -542,12 +600,65 @@
             }
 
             init() {
-                let that = this;
-                this.human.action = 'greeting';
-                userInputByText('hello');
-                that.finish.push(() => that.recognition.init());
-            }
+                    let that = this;
+                    this.human.action = 'greeting';
+                    userInputByText('hello');
+                    if (that.isRunRecognition && that.recognition) that.finish.push(() => that.initRecognition());
+                    // ocr
+                    this.initOcr();
+                }
+                // 监听触发
+            initRecognition() {
+                    let that = this;
+                    if (this.isRunRecognition) this.recognition.init();
+                    if (this.isRunRecognition && this.recognition) this.recognition.callback = res => {
 
+                        if (!that.isPlay && res.success && res.data) {
+                            that.isPlay = true;
+                            that.human.thinking();
+                            userInputByText(res.data);
+                        }
+                        if (res.success == false) {
+                            console.log(false)
+                        }
+
+                    }
+                }
+                // ocr触发
+            initOcr() {
+                let that = this;
+                if (!this.isRunRecognition) this.ocr.init();
+                if (!this.isRunRecognition && this.ocr) this.ocr.callback = text => {
+                    if (!that.isPlay && text) {
+                        that.isPlay = true;
+                        that.human.thinking();
+                        userInputByText(text);
+                    }
+                }
+            }
+            playHuman() {
+                // 监听暂停
+                // 动作播放,当有嘴型在播的时候，可以强制播放动作
+                that.human.hardPlay();
+                that.next();
+                if (that.recognition) that.recognition.abort();
+                if (that.ocr) that.ocr.abort();
+            }
+            playEnd() {
+
+                //嘴型动画播完了
+                this.human.action = null;
+                this.isPlay = false;
+                this.human.idle();
+                console.log('###Finished!');
+                for (const f of this.finish) {
+                    f();
+                };
+                this.finish = [];
+                // 恢复监听
+                if (this.recognition) this.recognition.restore();
+                if (this.ocr) this.ocr.restore();
+            }
             update(data) {
                 this.data = data;
                 this.preTime = (new Date()).getTime();
@@ -598,20 +709,14 @@
                         that.next();
                     });
                 } else {
-                    //嘴型动画播完了
-                    that.human.action = null;
-                    this.isPlay = false;
-                    that.human.idle();
-                    console.log('###Finished!');
-                    for (const f of this.finish) {
-                        f();
-                    };
-                    this.finish = [];
-                    this.recognition.restore();
+                    that.playEnd()
                 };
             }
 
+
+
         }
+
 
 
         init();
@@ -628,10 +733,10 @@
                 inputUI: document.querySelector('#user_input textarea')
             });
 
-            const recognition = new Recognition();
 
             window.control = new Control({
-                recognition: recognition,
+                recognition: new Recognition(),
+                // ocr: new Ocr(),
                 chatWindow: chatWindow,
                 human: human
             });
@@ -639,6 +744,8 @@
             document.querySelector('#hotspot-button-hello').addEventListener('click', () => {
                 window.control.init()
             });
+
+
 
         };
 

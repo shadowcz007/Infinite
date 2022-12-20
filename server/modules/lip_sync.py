@@ -3,7 +3,7 @@ import base64,json
 from subprocess import PIPE, Popen
 import argparse
 import numpy as np
-import os
+ 
 
 
 ph="mac" if utils.get_platform()=='macos' else "win"

@@ -1,5 +1,8 @@
-import modules.utils as utils
-import modules.http_server as http_server
-print(utils)
-print(http_server)
-http_server.start()
+import modules.fom as fom 
+
+fom.init()
+
+f='./face.png'
+a='./1.wav'
+fom.driving_video_user='./1.mp4'
+fom.run(f,a)

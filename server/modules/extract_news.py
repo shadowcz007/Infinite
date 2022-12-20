@@ -149,15 +149,24 @@ def start(filepath='./data',today=0):
 
 
 <script>
-    let cards = [...document.querySelectorAll('card')]
+     let cards = [...document.querySelectorAll('card')]
     let div = document.createElement('div');
     // div.setAttribute('contenteditable', true)
     div.style = `position: fixed;
     top: 0;
     right: 0; display: flex;flex-wrap: wrap;height: 100vh;
-    overflow: scroll;
-    background-color: #eee;width:60%;`
+    overflow: scroll; width:60%;`
     document.body.appendChild(div);
+
+    for (let card of cards) {
+        Array.from(card.querySelectorAll('div'), d => {
+            if (d.getAttribute('score') <= 1) d.parentElement.remove()
+        });
+        Array.from(card.querySelectorAll('details'), dt => dt.setAttribute('open', true))
+        if (card.querySelectorAll('details').length == 0) card.remove()
+    }
+    cards = [...document.querySelectorAll('card')];
+
     for (let card of cards) {
         card.style = 'display:none'
         let t = card.querySelector('h4').innerText;
@@ -167,22 +176,24 @@ def start(filepath='./data',today=0):
         card.querySelector('h4').remove();
         card.innerHTML = `<details><summary><h4></h4><p style="font-size: 12px;
     background: #ffffcd;
-    display: block;
+    display: inline-block;
     width: fit-content;
     padding: 4px;
-    cursor: pointer;">${t}</p></summary>${card.innerHTML}</details>`;
+    cursor: text;" contenteditable>${t} </p><button class='run' style="cursor: pointer;">AIGC</button></summary>${card.innerHTML}</details>`;
 
-        card.querySelector('summary p').addEventListener('click', e => {
-            createImage(div, '' + questions, card.querySelector('summary h4').innerText, urls.split(',')[0]);
+        card.querySelector('summary .run').addEventListener('click', e => {
+            console.log(e.target.previousElementSibling.innerText)
+            createImage(div, e.target.previousElementSibling.innerText, card.querySelector('summary h4').innerText, urls.split(',')[0]);
         })
 
 
         Array.from(card.querySelectorAll('img'), im => {
+            // console.log(im.parentElement)
             let title = im.parentElement.innerText.split('\\n')[0];
             if (!card.querySelector('summary h4').innerText) card.querySelector('summary h4').innerText = title
             let i = new Image();
             i.src = im.src;
-            i.style = 'width: fit-content;'
+            i.style = 'width: fit-content;display:block;'
             card.querySelector('summary').appendChild(i)
             card.style = `display: flex;
     flex-direction: column;
@@ -210,10 +221,12 @@ def start(filepath='./data',today=0):
         let im = document.createElement('div')
         let qrcode = new QRCode(im);
         qrcode.clear();
-        // 导流到微信公众号
-        qrcode.makeCode('http://weixin.qq.com/r/Skzbw9PEv47ArZeg9xlY');
 
-        const c = (i, imgUrl, title, qrUrl) => `<div><section style="border: 1px solid #dedede;" id="s${i}"><div style="width:300px;margin: 24px;" >
+        // 导流到微信公众号 mixlab http://weixin.qq.com/r/Skzbw9PEv47ArZeg9xlY
+        // shadow实验室 http://weixin.qq.com/r/IUNpcWnE2zSkrS0S9xYz
+        qrcode.makeCode('http://weixin.qq.com/r/IUNpcWnE2zSkrS0S9xYz');
+
+        const c = (i, imgUrl, title, qrUrl) => `<div><section style="border: 1px solid #dedede;background:#eee" id="s${i}"><div style="width:300px;margin: 24px;" >
             <img src="${imgUrl}" style="width:300px"/>
             <p style="display: flex;
     height: 56px;font-size: 15px;
@@ -225,23 +238,25 @@ def start(filepath='./data',today=0):
 
         r = (await create(questions)).data[0];
         div.innerHTML = c(0, r, title, im.children[1].src);
-        r1 = (await create(questions)).data[0];
-        div.innerHTML += c(1, r1, title, im.children[1].src);
-        r2 = (await create(questions)).data[0];
-        div.innerHTML += c(2, r2, title, im.children[1].src);
-        r3 = (await create(questions)).data[0];
-        div.innerHTML += c(3, r3, title, im.children[1].src);
-        r4 = (await create(questions)).data[0];
-        div.innerHTML += c(4, r4, title, im.children[1].src);
-        r5 = (await create(questions)).data[0];
-        div.innerHTML += c(5, r5, title, im.children[1].src);
-        r6 = (await create(questions)).data[0];
-        div.innerHTML += c(6, r6, title, im.children[1].src);
+        for (let index = 0; index < 20; index++) {
+            let r1 = (await create(questions)).data[0];
+            div.innerHTML += c(index, r1, title, im.children[1].src);
+        }
 
+    }
+    window.results = {};
+    try {
+        window.results = JSON.parse(localStorage.getItem('_res')) || {}
+    } catch (error) {
+        window.results = {};
     }
 
     function getImage(id) {
-        div.querySelector('#' + id).querySelector('.commit').innerHTML = div.querySelector('#' + id).querySelector('.commit').innerText;
+        let t = div.querySelector('#' + id).querySelector('.commit').innerText
+        div.querySelector('#' + id).querySelector('.commit').innerHTML = t;
+        window.results[t] = t;
+        localStorage.setItem('_res', JSON.stringify(window.results))
+
         html2canvas(div.querySelector('#' + id), {
             backgroundColor: '#ffffff',
             scale: window.devicePixelRatio * 2
@@ -249,6 +264,66 @@ def start(filepath='./data',today=0):
             div.innerHTML = ''
             div.appendChild(canvas);
         });
+    }
+
+    let b = document.createElement('button')
+    b.style = `top: 0px;
+    right: 0px;
+    position: fixed;
+    z-index: 999;
+    width: 44px;
+    height: 44px;
+    background: red;`
+    b.innerText = '导出'
+    document.body.appendChild(b)
+
+    b.addEventListener('click', e => {
+        b.style.display = 'none';
+        Array.from(document.querySelectorAll('button'), r => r.style.display = 'none');
+        copyToClickBoard(document.body.outerHTML)
+    })
+
+    function copyToClickBoard(content) {
+
+        navigator.clipboard.writeText(content)
+            .then(() => {
+                console.log("Text copied to clipboard...")
+                b.style.display = 'flex';
+                Array.from(document.querySelectorAll('button'), r => r.style.display = 'inline-block');
+            })
+            .catch(err => {
+                console.log('Something went wrong', err);
+                b.style.display = 'flex';
+                Array.from(document.querySelectorAll('button'), r => r.style.display = 'inline-block');
+            })
+
+    }
+
+    let b2 = document.createElement('button')
+    b2.style = `top:88px;
+    right: 0px;
+    position: fixed;
+    z-index: 999;
+    width: 44px;
+    height: 44px;
+    background: red;`
+    b2.innerText = '洞察'
+    document.body.appendChild(b2)
+
+    b2.addEventListener('click', e => {
+        copyRes()
+    })
+
+    function copyRes() {
+        navigator.clipboard.writeText(Object.keys(window.results).join('\\n'))
+            .then(() => {
+                console.log("Text copied to clipboard...")
+
+            })
+            .catch(err => {
+                console.log('Something went wrong', err);
+
+            })
     }
 </script>
 <script src="https://cdn.bootcdn.net/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>

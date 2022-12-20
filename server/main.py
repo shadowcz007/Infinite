@@ -12,6 +12,7 @@ import modules.ocr as ocr
 import modules.lip_sync as lip_sync
 import modules.tts as tts
 import modules.chatbot as chatbot
+import modules.fom as fom 
 
 import modules.taiyi_sd as taiyi_sd
 import modules.pai_painter as pai_painter
@@ -103,6 +104,11 @@ def count_user_feedback(keyword):
     return count
 
 
+def tts_init(wav_file_input):
+    wav_file=utils.write_wav(wav_file_input[1],wav_file_input[0],'./data/wav_file.wav')
+    tts.init(None,wav_file)
+    wav_file = tts.start('你好呀，初次见面，请多多指教啊')
+    return wav_file
 
 def tts_sync(question,wav_file_input,radio_input):
     # print(question)
@@ -130,6 +136,24 @@ def tts_sync(question,wav_file_input,radio_input):
     frames['question']=question
     frames['text']=text
     return wav_file,frames
+
+def fom_run(video_input,face_input):
+    global fom_res
+    if video_input and face_input:
+        fom_res=fom.FOM(utils.image_to_byte_data(face_input),video_input)
+    return fom_res
+
+def wav2lip_run(text,face_input):
+    global fom_res
+    wav_file = tts.start(text)
+
+    if fom_res:
+        face_input=fom_res
+    
+    res=fom.wav2lip(wav_file,face_input)
+    
+    return res
+
 
 
 def pai_painter_start(t):
@@ -164,19 +188,25 @@ with gr.Blocks(css="main.css") as demo:
                 height = gr.Slider(384, 768, value = 512, step = 64, label = '高度(height)')
                 strength = gr.Slider(0, 1.0, value = 0.8, step = 0.05, label = '参考图改变程度(strength)')
             with gr.Row(scale=0.5 ):
-                image_in = gr.Image(source='upload', elem_id="image_upload", type="pil", label="参考图（非必须）(ref)")
+                image_in = gr.Image(source='upload', elem_id="image_upload", type="pil", label="sd参考图（非必须）(ref)，虚拟人的人像照片")
 
             with gr.Row(scale=0.5):
                 wav_file_input = gr.Audio(label="录音",type="numpy")
                 tts_radio=gr.Radio(["asr-chatbot", "text-chatbot","tts","lip"])
                 tts_lip_btn = gr.Button("语音生成")
+                tts_init_btn=gr.Button('克隆声音')
+
+            with gr.Row(scale=0.5):
+                video_input = gr.Video()
+                fom_btn=gr.Button("fom生成")
+                wav2lip_btn=gr.Button("虚拟人播报生成")
 
             with gr.Row(scale=0.5):
                 pai_painter_btn = gr.Button("pai_painter生成")
             
         with gr.Column(scale=1, ):
             
-            keyword = gr.Textbox(label = 'prompt-用户输入')
+            keyword = gr.Textbox(label = 'prompt-用户输入,tts的文字')
 
             style_input = gr.Textbox(label = '风格-预设模板')
             
@@ -189,6 +219,7 @@ with gr.Blocks(css="main.css") as demo:
             
                 
     with gr.Row(scale=0.5):
+        video_out=gr.Video(label='结果')
         image_out = gr.Image(label = '输出(output)')
         json_out=gr.JSON(label='结果')    
             
@@ -238,11 +269,25 @@ with gr.Blocks(css="main.css") as demo:
         outputs=json_out,
         api_name="count_user_feedback")
 
+        tts_init_btn.click(fn=tts_init,
+        inputs=wav_file_input,
+        outputs=wav_file_input,
+        )
+
         tts_lip_btn.click(fn=tts_sync,
         inputs=[keyword,wav_file_input,tts_radio],
         outputs=[wav_file_input,json_out],
         api_name="audio_lip")
 
+        fom_btn.click(fn=fom_run,
+        inputs=[video_input,image_in],
+        outputs=video_out
+        )
+        wav2lip_btn.click(fn=wav2lip_run,
+        inputs=[keyword,image_in],
+        outputs=video_out
+        )
+
         # inpaint_btn.click(fn = infer_inpaint, inputs = [inpaint_prompt, width, height, image_in], outputs = image_out)
         # img2img_btn.click(fn = infer_img2img, inputs = [img2img_prompt, width, height, image_in], outputs = image_out)
-demo.queue(concurrency_count=1, max_size=4).launch(share=True)
+demo.queue(concurrency_count=1, max_size=4).launch(share=False)

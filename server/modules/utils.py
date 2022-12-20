@@ -106,7 +106,13 @@ def random_text(texts):
     return texts[i]
 
 
-
+def image_to_byte_data(image):
+    byte_data = io.BytesIO()# 创建一个字节流管道
+    if image:
+        image.save(byte_data, format="JPEG")# 将图片数据存入字节流管道
+        byte_data = byte_data.getvalue()
+        
+    return byte_data
 
 def image_to_base64(image):
     base64_str=None
