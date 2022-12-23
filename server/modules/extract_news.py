@@ -1,5 +1,5 @@
 from paddlenlp import Taskflow
-
+ 
 
 try:
     from . import utils
@@ -37,6 +37,39 @@ ie_en = Taskflow('information_extraction', schema=schema_en, model='uie-base-en'
 question_generator = Taskflow("question_generation")
 
 
+
+def create_html(data):
+    html='''<div score="'''+str(data['score'])+'''" class="score" style="display: flex;
+                flex-direction: column;
+                outline: 1px solid gray;
+                margin: 12px;
+                padding: 24px;
+                font-size: 18px;
+                font-weight: 800;
+                color: black;">'''+data['title']+''' <br>
+                '''+( '''<img src="'''+data['imgurl']+'''" style="width: 140px;height: fit-content;"/>''' if data['imgurl'] else '')+'''
+                <p style="background: yellow;
+                display: block;
+                width: fit-content;
+                margin: 0;
+                margin-top: 12px;
+                font-size: 12px;">'''+data['keyword']+' '+data['author']+'''</p> <p style="background: #dedede;
+                display: block;
+                width: fit-content;
+                font-size: 12px;
+                font-weight: 300;">'''+data['date']+'''</p> <p style="display: block;
+                width: fit-content;
+                margin: 6px;
+                font-size: 14px;
+                font-weight: 300;
+                line-height: 24px;">'''+data['snippet']+''' <a href="'''+data['url']+'''" style="
+                font-size: 15px;
+                font-weight: 800;
+                color: black;" target="_blank">  原文链接 </a></p></div>'''.replace('\n','')
+    return html
+
+ 
+
 def start(filepath='./data',today=0):
     
     items={}
@@ -53,18 +86,17 @@ def start(filepath='./data',today=0):
                 #print('* ',item['title'])
                 is_zh=utils.is_contain_zh(item['text'])
 
-                item['event'],mkey=extract(item['title'],item['text'],'zh' if is_zh else 'en')
+                #翻译
+                if is_zh==False:
+                    item['text']=translate.start(item['text'])
+                    item['title']=translate.start(item['title'])
+
+                item['event'],mkey=extract(item['title'],item['text'],'zh')
                 
-
-                if item['event'] and len(item['imgurl'])>0:
-                    # 如果有提取出信息才能进一步  && 有封面图的
-
+                if item['event'] and mkey:
+                    # 如果有提取出信息才能进一步
                     item['score']+=len(item['event'].keys())+1
                     
-                    #翻译
-                    if is_zh==False:
-                        item['text']=translate.start(item['text'])
-
                     #问题生成
                     if mkey:
                         r=question_generator([{
@@ -74,13 +106,12 @@ def start(filepath='./data',today=0):
                         item['event']['问题']=r[0]
                         item['event']['答案']=mkey+'_'+item['event'][mkey]
                         item['event']['url']=item['url']
-                        # print(r)
-                        # print({
-                        #     "context":item['text'],
-                        #     "answer":mkey+'_'+item['event'][mkey]
-                        # })
-                        # print('________________')
+                
+                # if item['event'] and '技术' in item['event']:
+                #     print(item['event']['技术'])
+                #     print(item['score'],item['title'])
 
+                item['html']=create_html(item)
 
                 items[utils.get_id(item['url'])]=item
 
@@ -98,6 +129,7 @@ def start(filepath='./data',today=0):
             item['html']='<details><summary><div style="display: inline-flex;align-items: baseline;"><p>'+item['title']+p+'</p></div></summary>'+ item['html']+ '</details>'
             
             events[item['event']['事件']]=item
+        
             
     
     # 按照公司\产品\人物\技术  来整理信息
@@ -106,15 +138,20 @@ def start(filepath='./data',today=0):
         key='技术'
         if e['event'] and not key in e['event']:
             key='产品'
-        if e['event'] and not key in e['event']:
-            key='人物'
-        if e['event'] and not key in e['event']:
-            key='公司/组织/机构'
+        # if e['event'] and not key in e['event']:
+        #     key='人物'
+        # if e['event'] and not key in e['event']:
+        #     key='公司/组织/机构'
 
         if e['event'] and key in e['event']:
             if not e['event'][key] in organizations:
                 organizations[e['event'][key]]=[]
             organizations[e['event'][key]].append(e)
+        
+        # else:
+        #     print(e['score'],e['title'])
+
+
 
     # 公司信息排序
     rank_res=[]
@@ -124,7 +161,7 @@ def start(filepath='./data',today=0):
             "question":d['event']['问题'],
             "url":d['event']['url']
         } for d in data if '问题' in d['event']]
-        print(qs)
+        # print(qs)
         html="<card><h4 class='for_ai' urls='"+",".join([q['url'] for q in qs])+"' questions='"+",".join([q['question'] for q in qs])+"' title='"+k+"'>"+k+"<br>"+",".join([q['question'] for q in qs])+"</h4>"+"".join([d['html'] for d in data])+"</card>"
         rank_res.append({
             "data":data,
@@ -147,61 +184,60 @@ def start(filepath='./data',today=0):
 </head>
 <body>'''+"".join([r['html'] for r in result])+'''</body>
 
-
+<style>
+    .for_ai {
+        font-size: 18px;
+        font-weight: 800;
+        color: cornflowerblue;
+        margin: 0;
+    }
+    
+    details {
+        background: #ededed;
+    }
+</style>
 <script>
-     let cards = [...document.querySelectorAll('card')]
-    let div = document.createElement('div');
-    // div.setAttribute('contenteditable', true)
-    div.style = `position: fixed;
-    top: 0;
-    right: 0; display: flex;flex-wrap: wrap;height: 100vh;
-    overflow: scroll; width:60%;`
-    document.body.appendChild(div);
-
+let cards = [...document.querySelectorAll('card')]
+    let n = 10 + eval(Array.from(document.querySelectorAll('.score'), s => ~~s.getAttribute('score')).join('+')) / document.querySelectorAll('.score').length;
+    console.log(n)
     for (let card of cards) {
-        Array.from(card.querySelectorAll('div'), d => {
-            if (d.getAttribute('score') <= 1) d.parentElement.remove()
+        Array.from(card.querySelectorAll('.score'), d => {
+            if (d.getAttribute('score') <= n) d.parentElement.remove()
         });
-        Array.from(card.querySelectorAll('details'), dt => dt.setAttribute('open', true))
+
         if (card.querySelectorAll('details').length == 0) card.remove()
     }
     cards = [...document.querySelectorAll('card')];
-
+    console.log(cards.length)
     for (let card of cards) {
-        card.style = 'display:none'
-        let t = card.querySelector('h4').innerText;
-        let urls = card.querySelector('h4').getAttribute('urls'),
-            title = card.querySelector('h4').getAttribute('title'),
-            questions = card.querySelector('h4').getAttribute('questions');
-        card.querySelector('h4').remove();
-        card.innerHTML = `<details><summary><h4></h4><p style="font-size: 12px;
-    background: #ffffcd;
-    display: inline-block;
-    width: fit-content;
-    padding: 4px;
-    cursor: text;" contenteditable>${t} </p><button class='run' style="cursor: pointer;">AIGC</button></summary>${card.innerHTML}</details>`;
+        card.querySelector('.for_ai').innerText = card.querySelector('.for_ai').innerHTML.split('<br>')[0]
+            // console.log(card.querySelector('.for_ai').innerHTML.split('<br>'))
+        Array.from(card.children, (c, i) => {
+            if (i > 0) {
 
-        card.querySelector('summary .run').addEventListener('click', e => {
-            console.log(e.target.previousElementSibling.innerText)
-            createImage(div, e.target.previousElementSibling.innerText, card.querySelector('summary h4').innerText, urls.split(',')[0]);
+                c.querySelector('summary').children[0].setAttribute('title', c.querySelector('summary').children[0].children[0].innerText)
+                c.querySelector('summary').children[0].children[0].innerHTML = `
+                <div contenteditable>${c.querySelector('summary').children[0].children[0].innerText} </div>
+                <button class='run' style="cursor: pointer;">AIGC</button> `;
+
+                c.querySelector('.run').addEventListener('click', e => {
+                    console.log(e.target.parentElement.parentElement.getAttribute('title'), e.target.previousElementSibling.innerText)
+                    createImage(div, e.target.previousElementSibling.innerText, e.target.parentElement.parentElement.getAttribute('title'), c.querySelector('a').href);
+                })
+
+            }
         })
 
-
-        Array.from(card.querySelectorAll('img'), im => {
-            // console.log(im.parentElement)
-            let title = im.parentElement.innerText.split('\\n')[0];
-            if (!card.querySelector('summary h4').innerText) card.querySelector('summary h4').innerText = title
-            let i = new Image();
-            i.src = im.src;
-            i.style = 'width: fit-content;display:block;'
-            card.querySelector('summary').appendChild(i)
-            card.style = `display: flex;
-    flex-direction: column;
-    background-color: #eee;
-    padding: 18px;margin: 12px 0;`
-        })
     };
 
+
+    let div = document.createElement('div');
+    // div.setAttribute('contenteditable', true)
+    div.style = `position: fixed;
+    top: 0;outline:1px solid gray;
+    right: 0; display: flex;flex-wrap: wrap;max-height: 100vh;
+    overflow: scroll; width:40%;`
+    document.body.appendChild(div);
 
     function create(t) {
         return fetch("http://127.0.0.1:7860/run/infer_text2img_for_auto", {

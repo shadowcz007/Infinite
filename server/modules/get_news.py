@@ -38,12 +38,31 @@ Virtual Reality
 Augmented Reality
 增强现实 
 虚拟现实 
+虚拟世界
+开发者社区
+AI大模型
 WebXR 
 Artificial intelligence 
 人工智能
 脑机接口 
 AI大模型 
-游戏引擎'''
+游戏引擎
+区块链
+智能合约
+加密货币
+数字资产
+深度学习
+机器学习
+自然语言处理
+计算机视觉
+游戏开发
+数字化
+可视化
+可交互式
+可持续发展
+元宇宙服装
+Product-led Growth
+'''
 
 keywords=[k.strip() for k in keywords.split('\n') if k.strip()!='']
 
@@ -68,12 +87,12 @@ arxiv.org
 the-decoder.com
 mixed-news.com
 tech.sina.com.cn
-www.qbitai.com
-www.jiqizhixin.com
-www.36kr.com
-www.mittrchina.com
-www.leiphone.com
-www.vrtuoluo.cn
+qbitai.com
+jiqizhixin.com
+36kr.com
+mittrchina.com
+leiphone.com
+vrtuoluo.cn
 news.nweon.com
 hub.baai.ac.cn
 zhidx.com
@@ -83,7 +102,7 @@ geekpark.net
 good_sites=[k.strip() for k in good_sites.split('\n') if k.strip()!='']
 
 bad_sites='''
-www.msn.com
+msn.com
 '''
 bad_sites=[k.strip() for k in bad_sites.split('\n') if k.strip()!='']
 
@@ -96,12 +115,22 @@ bad_case='''直播
 开幕
 大赛
 竞赛
+合作论坛
+生态论坛
 工作动态
+创意大赛
 weekly report
 今日更多新鲜事
 项目报道
 周报
+新动态
+完美落幕
+培训活动
+日报
+今日更多大新闻
 新闻首页
+每日要闻
+招生官网
 Bing 词典
 搜索 图片
 _哔哩哔哩
@@ -109,7 +138,24 @@ _哔哩哔哩
 搜索 视频
 搜索 图片
 量子位
+展览现场
 金财互联
+路演
+通知
+周末利好消息
+精彩盘点
+本科招生简章
+招生专业计划发布
+招生信息汇总
+赠票
+指北播报
+风雨看盘
+看点回顾
+涨停分析
+专场回顾
+现场直击
+全年征订中
+习近平
 Access Denied
 Search Images
 Search Videos'''

@@ -25,6 +25,7 @@ STYLE_PROMPTS=[k.strip() for k in
 ，长城上，看足球比赛，脚踢足球，足球，足球!!!!!!,人物，肖像画，高细节表现力，blender渲染的概念艺术图，超清，超现实主义，高清的图像,8k detail，脸部刻画清晰，锐化,写实摄影作品
 ，使用Blender渲染的超现实主义，8K详细度，锐化，写实摄影作品，3d作品，水墨风格。
 ，细节清晰，不要有手，使用Blender渲染的超现实主义，8K详细度，锐化，游戏引擎作品，3d作品，三维建模，现实感，画面明亮，水墨风格，水彩的色彩，立体卡通，摄影后期，完整的画面
+，细节清晰，宋徽宗的丝网印刷, featured on pixiv, featured on amiami, bong， thick oil painting，8K详细度，锐化，中国油画
 
 '''.split("\n") if len(k.strip())>0]
 

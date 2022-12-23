@@ -24,6 +24,7 @@ pre_text='1'
 #记录上一次用户投票
 pre_count=0
 
+fom_res=None
   
 
 def create_http_server(style_prompt,guide, steps, width, height, image_in, strength):
