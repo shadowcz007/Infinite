@@ -610,8 +610,8 @@
                 // 监听触发
             initRecognition() {
                     let that = this;
-                    if (this.isRunRecognition) this.recognition.init();
-                    if (this.isRunRecognition && this.recognition) this.recognition.callback = res => {
+                    if (that.isRunRecognition) that.recognition.init();
+                    if (that.isRunRecognition && that.recognition) that.recognition.callback = res => {
 
                         if (!that.isPlay && res.success && res.data) {
                             that.isPlay = true;
@@ -623,6 +623,7 @@
                         }
 
                     }
+                    console.log(that.recognition.callback)
                 }
                 // ocr触发
             initOcr() {
@@ -637,6 +638,8 @@
                 }
             }
             playHuman() {
+                let that = this;
+                // console.log('playHuman')
                 // 监听暂停
                 // 动作播放,当有嘴型在播的时候，可以强制播放动作
                 that.human.hardPlay();
@@ -689,9 +692,11 @@
                 if (this.data.base64) {
                     this.sound.load(this.data.base64);
                 }
+                // console.log('start')
             }
 
             next() {
+                // console.log(this.currentTime < this.duration)
                 let that = this;
                 let t = (new Date()).getTime();
                 if (t - this.preTime > 1000 / this.fps) {
@@ -711,6 +716,7 @@
                 } else {
                     that.playEnd()
                 };
+
             }
 
 
