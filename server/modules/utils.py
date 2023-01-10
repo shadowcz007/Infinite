@@ -73,6 +73,7 @@ def read_dir_json_byday(filepath,day=0):
     for filename in filenames:
         if d in filename:
             res.append({
+                "filepath":filepath+'/'+filename,
                 "filename":filename,
                 "data":load_json(filepath+'/'+filename)
             })

@@ -23,6 +23,7 @@ keywords='''
 metaverse
 DAO
 AIGC
+chatGPT
 数字艺术
 crypto art 
 Virtual Spaces 
@@ -47,9 +48,6 @@ Artificial intelligence
 脑机接口 
 AI大模型 
 游戏引擎
-区块链
-智能合约
-加密货币
 数字资产
 深度学习
 机器学习
@@ -59,9 +57,9 @@ AI大模型
 数字化
 可视化
 可交互式
-可持续发展
 元宇宙服装
 Product-led Growth
+产品设计
 '''
 
 keywords=[k.strip() for k in keywords.split('\n') if k.strip()!='']
@@ -169,10 +167,13 @@ pre_datas={}
 for i in range(-7,0):
     jsons=utils.read_dir_json_byday(FILE_PATH,i)
     for jsons_data in jsons:
-        data=jsons_data['data']['data']
-        print(jsons_data['filename'])
-        for d in data:
-            pre_datas[utils.get_id(d['url'])]=1
+        if isinstance(jsons_data['data'], dict):
+            data=jsons_data['data']['data']
+            #print(jsons_data['filename'])
+            for d in data:
+                pre_datas[utils.get_id(d['url'])]=1
+        else:
+            print(jsons_data['filename'])
 
 print('前7天 已经爬取的数据',len(pre_datas.keys()))
 

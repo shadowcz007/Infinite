@@ -2,8 +2,8 @@
 import requests, json,datetime
 import utils
 
-token = ' '
-database_id = ' '
+token = 'secret_8X2Ryn7H8qsmTQ4c1gEQeP6A6Mw4QZgErwh7SwKKewO'
+database_id = '9146862723b4461888c56a00182d4a53'
 
 headers = {
     "Authorization": "Bearer " + token,

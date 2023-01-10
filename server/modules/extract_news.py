@@ -32,9 +32,9 @@ schema_zh = [x for x in schema.keys()]
 schema_en=[x for x in schema.values()]
 print(schema_zh,'_',schema_en)
 ie = Taskflow('information_extraction', schema=schema_zh)
-ie_en = Taskflow('information_extraction', schema=schema_en, model='uie-base-en')
+# ie_en = Taskflow('information_extraction', schema=schema_en, model='uie-base-en')
 # similarity = Taskflow("text_similarity")
-question_generator = Taskflow("question_generation")
+# question_generator = Taskflow("question_generation")
 
 
 
@@ -71,50 +71,60 @@ def create_html(data):
  
 
 def start(filepath='./data',today=0):
-    
     items={}
-
     jsons=utils.read_dir_json_byday(filepath,today)
+
+    #翻译
+    for jsons_data in jsons:
+        data=jsons_data['data']
+        if isinstance(data, dict):
+            for item in data['data']:
+                if isinstance(item, dict) and not 'is_zh' in item:
+                    item['text']=(",".join([item['title'],item['snippet'],item['keyword']])).lower()
+                    is_zh=utils.is_contain_zh(item['text'])
+                    #翻译
+                    if is_zh==False:
+                        try:
+                            item['text']=translate.start(item['text'])
+                            item['title']=translate.start(item['title'])
+                            is_zh=True
+                        except:
+                            print(is_zh,'translate:',item['title'])
+                    item['is_zh']=is_zh
+            utils.write_json(data,jsons_data['filepath'])
+
  
     for jsons_data in jsons:
         data=jsons_data['data']
-        for item in data['data']:
-            if isinstance(item, dict):
-                # print(item.keys())
-                item['text']=(",".join([item['title'],item['snippet'],item['keyword']])).lower()
+        # print(data)
+        if isinstance(data, dict):
 
-                #print('* ',item['title'])
-                is_zh=utils.is_contain_zh(item['text'])
+            for item in data['data']:
+                if isinstance(item, dict) and not 'event' in item:
 
-                #翻译
-                if is_zh==False:
-                    item['text']=translate.start(item['text'])
-                    item['title']=translate.start(item['title'])
+                    #item['text']=(",".join([item['title'],item['snippet'],item['keyword']])).lower()
+                    is_zh=item['is_zh']
 
-                item['event'],mkey=extract(item['title'],item['text'],'zh')
-                
-                if item['event'] and mkey:
-                    # 如果有提取出信息才能进一步
-                    item['score']+=len(item['event'].keys())+1
+                    # print('is_zh:',is_zh,item['text'])
+                    if is_zh==True:
+                        item['event'],mkey=extract(item['title'],item['text'],'zh')
                     
-                    #问题生成
-                    if mkey:
-                        r=question_generator([{
-                        "context":item['text'],
-                        "answer":item['event'][mkey]
-                        }])
-                        item['event']['问题']=r[0]
-                        item['event']['答案']=mkey+'_'+item['event'][mkey]
+                    if 'event' in item and item['event'] and mkey:
+                        # 如果有提取出信息才能进一步
+                        item['score']+=len(item['event'].keys())+1
+                        
                         item['event']['url']=item['url']
-                
-                # if item['event'] and '技术' in item['event']:
-                #     print(item['event']['技术'])
-                #     print(item['score'],item['title'])
+                    
+                        print(item['score'],item['title'])
 
-                item['html']=create_html(item)
+                        item['html']=create_html(item)
 
-                items[utils.get_id(item['url'])]=item
-
+                        items[utils.get_id(item['url'])]=item
+            
+            # for item in data['data']:
+            #     print(item['event'])
+            # print(jsons_data['filepath'])
+            utils.write_json(data,jsons_data['filepath'])
                 
 
     # 重复的事件去除
@@ -189,7 +199,7 @@ def start(filepath='./data',today=0):
         font-size: 18px;
         font-weight: 800;
         color: cornflowerblue;
-        margin: 0;
+        margin: 32px 0;
     }
     
     details {
@@ -200,6 +210,22 @@ def start(filepath='./data',today=0):
 let cards = [...document.querySelectorAll('card')]
     let n = 10 + eval(Array.from(document.querySelectorAll('.score'), s => ~~s.getAttribute('score')).join('+')) / document.querySelectorAll('.score').length;
     console.log(n)
+
+    if (localStorage.getItem(document.title)) {
+        n = parseInt(localStorage.getItem(document.title))
+    };
+    localStorage.setItem(document.title, n);
+    let inputN = document.createElement('input');
+    inputN.type = 'number';
+    inputN.value = n;
+    inputN.addEventListener('change', e => {
+        localStorage.setItem(document.title, parseInt(inputN.value));
+        window.location.reload();
+    });
+
+    document.body.insertAdjacentElement('afterbegin', inputN);
+
+
     for (let card of cards) {
         Array.from(card.querySelectorAll('.score'), d => {
             if (d.getAttribute('score') <= n) d.parentElement.remove()
@@ -209,6 +235,12 @@ let cards = [...document.querySelectorAll('card')]
     }
     cards = [...document.querySelectorAll('card')];
     console.log(cards.length)
+
+    let cardsNum = document.createElement('div');
+    cardsNum.innerText = cards.length;
+    document.body.insertAdjacentElement('afterbegin', cardsNum);
+
+
     for (let card of cards) {
         card.querySelector('.for_ai').innerText = card.querySelector('.for_ai').innerHTML.split('<br>')[0]
             // console.log(card.querySelector('.for_ai').innerHTML.split('<br>'))
@@ -216,17 +248,33 @@ let cards = [...document.querySelectorAll('card')]
             if (i > 0) {
 
                 c.querySelector('summary').children[0].setAttribute('title', c.querySelector('summary').children[0].children[0].innerText)
+                c.querySelector('a').href = c.querySelector('a').href + '?knowledgeTags=' + card.querySelector('.for_ai').innerText + '&knowledgeReply=' + c.querySelector('summary').children[0].children[0].innerText;
+            
                 c.querySelector('summary').children[0].children[0].innerHTML = `
                 <div contenteditable>${c.querySelector('summary').children[0].children[0].innerText} </div>
                 <button class='run' style="cursor: pointer;">AIGC</button> `;
+                
+                let btn = document.createElement('button');
+                    btn.innerText = 'delete'
+                    btn.addEventListener('click', e => {
+                        c.remove()
+                    });
+                c.querySelector('summary').children[0].children[0].appendChild(btn);
 
                 c.querySelector('.run').addEventListener('click', e => {
                     console.log(e.target.parentElement.parentElement.getAttribute('title'), e.target.previousElementSibling.innerText)
                     createImage(div, e.target.previousElementSibling.innerText, e.target.parentElement.parentElement.getAttribute('title'), c.querySelector('a').href);
                 })
-
+                
             }
         })
+
+        let btn = document.createElement('button');
+            btn.innerText = 'delete'
+            btn.addEventListener('click', e => {
+                card.remove()
+            });
+        card.appendChild(btn);
 
     };
 
@@ -314,9 +362,23 @@ let cards = [...document.querySelectorAll('card')]
     document.body.appendChild(b)
 
     b.addEventListener('click', e => {
-        b.style.display = 'none';
-        Array.from(document.querySelectorAll('button'), r => r.style.display = 'none');
-        copyToClickBoard(document.body.outerHTML)
+        let cards = document.querySelectorAll('card');
+        let res = '';
+        for (const card of cards) {
+            let tag = card.querySelector('h4').innerText,
+                texts = Array.from(card.children, c => {
+                    if (c.querySelector('summary')) {
+
+                        let title = c.querySelector('summary').children[0].title;
+                        let url = c.querySelector('a').href;
+                        return `· [${title}](${url})`
+                    }
+
+                }).filter(f => f).join(' \\n\\n ');
+            res += '`' + tag + '` \\n\\n ' + texts + '\\n\\n';
+        }
+
+        copyToClickBoard(res)
     })
 
     function copyToClickBoard(content) {
@@ -375,11 +437,11 @@ let cards = [...document.querySelectorAll('card')]
 #抽取人物、公司、事件、观点
 #同时去除，信息量不足的资讯
 def extract(title,text,lang='zh'):
-
+    items=[]
     if lang=='zh':
         items=ie(text)
-    else:
-        items=ie_en(text)
+    # else:
+    #     items=ie_en(text)
 
     result={}
 
