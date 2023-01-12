@@ -5,9 +5,14 @@ except:
     import utils
 
 
+# huggingface的sd库
+from diffusers import StableDiffusionPipeline,StableDiffusionImg2ImgPipeline
+import torch
+
 DEVICE="cuda"
 # MODEL_ID = "IDEA-CCNL/Taiyi-Stable-Diffusion-1B-Chinese-EN-v0.1"
-MODEL_ID="IDEA-CCNL/Taiyi-Stable-Diffusion-1B-Chinese-v0.1"
+# MODEL_ID='shadow/duckduck-roast_duck-heywhale'
+# MODEL_ID="IDEA-CCNL/Taiyi-Stable-Diffusion-1B-Chinese-v0.1"
 
 # 内置的物体名词
 KEYWORDS=[k.strip() for k in 
@@ -41,10 +46,15 @@ pipe_text2img=None
 pipe_img2img=None
 pipe_opts=None
 
-def update_pipe_opts(style_prompt,guide, steps, width, height, image_in, strength):
+def update_pipe_opts(model_id,style_prompt,guide, steps, width, height, image_in, strength):
     global pipe_opts
-    # print(image_in)
+    
+    # 用于释放显存 
+    with torch.no_grad():
+        torch.cuda.empty_cache()
+
     pipe_opts={
+        "model_id":model_id,
         "style_prompt":style_prompt,
         "guide":guide,
         "steps":steps,
@@ -55,10 +65,8 @@ def update_pipe_opts(style_prompt,guide, steps, width, height, image_in, strengt
     }
     return pipe_opts
 
-def init_sd():
-    # huggingface的sd库
-    from diffusers import StableDiffusionPipeline,StableDiffusionImg2ImgPipeline
-    import torch
+def init_sd(model_id):
+    
 
     global pipe_text2img
     global pipe_img2img
@@ -68,19 +76,20 @@ def init_sd():
     # global sd_zh_pipe
     # sd_zh_pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16).to(device)
     # sd_zh_pipe = StableDiffusionPipeline.from_pretrained("IDEA-CCNL/Taiyi-Stable-Diffusion-1B-Chinese-EN-v0.1").to("cuda")
-    pipe_text2img = StableDiffusionPipeline.from_pretrained(MODEL_ID, torch_dtype=torch.float16,safety_checker=None).to(DEVICE)
+    pipe_text2img = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16,safety_checker=None).to(DEVICE)
     pipe_img2img = StableDiffusionImg2ImgPipeline(**pipe_text2img.components).to(DEVICE)
 
 
 
-def infer_text2img(prompt, style_prompt,guide, steps, width, height, image_in, strength):
+def infer_text2img(prompt,model_id, style_prompt,guide, steps, width, height, image_in, strength):
     global pipe_text2img
     global pipe_img2img
 
     if style_prompt!=None:
         prompt=prompt+','+style_prompt
     if pipe_text2img==None:
-        init_sd()
+        init_sd(model_id)
+    print('image_in:',image_in)
     if image_in is not None:
         init_image = image_in.convert("RGB").resize((width, height))
         output = pipe_img2img(prompt, 
@@ -99,6 +108,7 @@ def infer_text2img(prompt, style_prompt,guide, steps, width, height, image_in, s
 def infer_text2img_for_auto(prompt):
     global pipe_opts
     im=infer_text2img(prompt,
+    pipe_opts["model_id"],
     pipe_opts["style_prompt"],
     pipe_opts["guide"],
     pipe_opts["steps"],

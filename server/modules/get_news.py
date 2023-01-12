@@ -321,6 +321,8 @@ def run(playwright: Playwright) -> None:
     # # ---------------------
     context.close()
     browser.close()
+    utils.print_info('完成','本次共获得'+str(len(count_keywords))+'条')
+
 
 
 with sync_playwright() as playwright:

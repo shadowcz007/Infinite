@@ -180,6 +180,7 @@ with gr.Blocks(css="main.css") as demo:
                 shotscreen_btn=gr.Button("截图区域配置")
                 shotscreen_and_ocr_btn=gr.Button("截图&OCR")
                 http_server_btn=gr.Button("http服务")
+                model_id_input = gr.Textbox(label = '风格-预设模板',value='shadow/duckduck-roast_duck-heywhale')
                 update_pipe_opts_btn=gr.Button('更新参数')
             
             with gr.Row(scale=0.5 ):
@@ -225,7 +226,7 @@ with gr.Blocks(css="main.css") as demo:
         json_out=gr.JSON(label='结果')    
             
     with gr.Row():     
-        ex = gr.Examples(examples, fn=taiyi_sd.infer_text2img, inputs=[keyword,style_input, guide, steps, width, height], outputs=image_out)
+        ex = gr.Examples(examples, fn=taiyi_sd.infer_text2img, inputs=[keyword,model_id_input,style_input, guide, steps, width, height], outputs=image_out)
         # with gr.Column(scale=1, ):
         #     image_in = gr.Image(source='upload', tool='sketch', elem_id="image_upload", type="pil", label="Upload")
         #     inpaint_prompt = gr.Textbox(label = '提示词(prompt)')
@@ -237,7 +238,7 @@ with gr.Blocks(css="main.css") as demo:
         outputs = image_out,api_name="infer_text2img_for_auto")
 
         submit_btn.click(fn = taiyi_sd.infer_text2img, 
-        inputs = [keyword,style_input, guide, steps, width, height, image_in, strength], 
+        inputs = [keyword,model_id_input,style_input, guide, steps, width, height, image_in, strength], 
         outputs = image_out,api_name="infer_text2img")
 
         pai_painter_btn.click(fn=pai_painter_start,
@@ -246,7 +247,7 @@ with gr.Blocks(css="main.css") as demo:
         api_name="pai_painter")
 
         update_pipe_opts_btn.click(fn = taiyi_sd.update_pipe_opts, 
-        inputs = [style_input, guide, steps, width, height, image_in, strength], 
+        inputs = [model_id_input,style_input, guide, steps, width, height, image_in, strength], 
         outputs = json_out)
 
         shotscreen_btn.click(fn=ocr.shotscreen_setup,inputs =[screen_x,screen_y,screen_width,screen_height],

@@ -3,7 +3,11 @@ import hashlib,json,os,random,io,base64
 from itertools import permutations
 import soundfile as sf
 from PIL import Image
+import tkinter.messagebox as msgbox
 
+
+def print_info(title,text):
+    msgbox.showinfo(title,text)
 
 def get_platform():
     import platform

@@ -430,7 +430,8 @@ let cards = [...document.querySelectorAll('card')]
 </html>'''
 
     
-    utils.write_file(result,filepath+"/"+d+"_extract.html")      
+    utils.write_file(result,filepath+"/"+d+"_extract.html")
+    utils.print_info('完成',filepath+"/"+d+"_extract.html")    
      
 
     

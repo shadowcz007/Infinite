@@ -1,9 +1,14 @@
  
 from diffusers import StableDiffusionPipeline
 import torch
+
+
+# model_name='shadow/duckduck-roast_duck-heywhale'
+model_name='IDEA-CCNL/Taiyi-Stable-Diffusion-1B-Chinese-EN-v0.1'
+
 # ,safety_checker=None
 torch.backends.cudnn.benchmark = True
-sd_zh_pipe = StableDiffusionPipeline.from_pretrained("IDEA-CCNL/Taiyi-Stable-Diffusion-1B-Chinese-EN-v0.1", torch_dtype=torch.float16,safety_checker=None)
+sd_zh_pipe = StableDiffusionPipeline.from_pretrained(model_name, torch_dtype=torch.float16,safety_checker=None)
 sd_zh_pipe.to('cuda')
 
 
