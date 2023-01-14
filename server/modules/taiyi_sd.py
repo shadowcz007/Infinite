@@ -10,9 +10,12 @@ from diffusers import StableDiffusionPipeline,StableDiffusionImg2ImgPipeline
 import torch
 
 DEVICE="cuda"
-# MODEL_ID = "IDEA-CCNL/Taiyi-Stable-Diffusion-1B-Chinese-EN-v0.1"
-# MODEL_ID='shadow/duckduck-roast_duck-heywhale'
-# MODEL_ID="IDEA-CCNL/Taiyi-Stable-Diffusion-1B-Chinese-v0.1"
+def get_model_list():
+   return ['shadow/duckduck-roast_duck-heywhale',
+            "IDEA-CCNL/Taiyi-Stable-Diffusion-1B-Chinese-EN-v0.1",
+            "IDEA-CCNL/Taiyi-Stable-Diffusion-1B-Chinese-v0.1"
+    ]
+
 
 # 内置的物体名词
 KEYWORDS=[k.strip() for k in 
@@ -81,7 +84,7 @@ def init_sd(model_id):
 
 
 
-def infer_text2img(prompt,model_id, style_prompt,guide, steps, width, height, image_in, strength):
+def infer_text2img(prompt, style_prompt,model_id,guide, steps, width, height, image_in, strength):
     global pipe_text2img
     global pipe_img2img
 
@@ -108,8 +111,8 @@ def infer_text2img(prompt,model_id, style_prompt,guide, steps, width, height, im
 def infer_text2img_for_auto(prompt):
     global pipe_opts
     im=infer_text2img(prompt,
-    pipe_opts["model_id"],
     pipe_opts["style_prompt"],
+    pipe_opts["model_id"],
     pipe_opts["guide"],
     pipe_opts["steps"],
     pipe_opts["width"],

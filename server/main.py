@@ -17,6 +17,10 @@ import modules.fom as fom
 import modules.taiyi_sd as taiyi_sd
 import modules.pai_painter as pai_painter
 
+import modules.get_news as get_news
+
+# 保存数据的路径
+data_file_path=utils.get_data_file_path()
 
 #上一次用户输入
 pre_text='1'
@@ -25,12 +29,11 @@ pre_text='1'
 pre_count=0
 
 fom_res=None
-  
+
 
 def create_http_server(style_prompt,guide, steps, width, height, image_in, strength):
     http_server.start()
     return taiyi_sd.update_pipe_opts(style_prompt,guide, steps, width, height, image_in, strength)
-
 
 
 
@@ -163,6 +166,13 @@ def pai_painter_start(t):
     return im.argument,im
 
 
+def get_news_run():
+    get_news.start(data_file_path)
+    return {
+        "data":"正在爬取"
+    }
+
+
 
 with gr.Blocks(css="main.css") as demo:
     examples = [[taiyi_sd.random_keyword(),x] for x in taiyi_sd.STYLE_PROMPTS]
@@ -180,8 +190,10 @@ with gr.Blocks(css="main.css") as demo:
                 shotscreen_btn=gr.Button("截图区域配置")
                 shotscreen_and_ocr_btn=gr.Button("截图&OCR")
                 http_server_btn=gr.Button("http服务")
-                model_id_input = gr.Textbox(label = '风格-预设模板',value='shadow/duckduck-roast_duck-heywhale')
+                model_id_input=gr.Dropdown(label='huggface-模型-id',value=taiyi_sd.get_model_list()[0],choices=taiyi_sd.get_model_list())
+                # model_id_input = gr.Textbox(label = '风格-预设模板',value='shadow/duckduck-roast_duck-heywhale')
                 update_pipe_opts_btn=gr.Button('更新参数')
+                get_news_btn=gr.Button('爬取今天资讯')
             
             with gr.Row(scale=0.5 ):
                 guide = gr.Slider(2, 15, value = 7, label = '文本引导强度(guidance scale)')
@@ -226,7 +238,7 @@ with gr.Blocks(css="main.css") as demo:
         json_out=gr.JSON(label='结果')    
             
     with gr.Row():     
-        ex = gr.Examples(examples, fn=taiyi_sd.infer_text2img, inputs=[keyword,model_id_input,style_input, guide, steps, width, height], outputs=image_out)
+        ex = gr.Examples(examples, fn=taiyi_sd.infer_text2img, inputs=[keyword,style_input, model_id_input,guide, steps, width, height], outputs=image_out)
         # with gr.Column(scale=1, ):
         #     image_in = gr.Image(source='upload', tool='sketch', elem_id="image_upload", type="pil", label="Upload")
         #     inpaint_prompt = gr.Textbox(label = '提示词(prompt)')
@@ -238,7 +250,7 @@ with gr.Blocks(css="main.css") as demo:
         outputs = image_out,api_name="infer_text2img_for_auto")
 
         submit_btn.click(fn = taiyi_sd.infer_text2img, 
-        inputs = [keyword,model_id_input,style_input, guide, steps, width, height, image_in, strength], 
+        inputs = [keyword, style_input,model_id_input, guide, steps, width, height, image_in, strength], 
         outputs = image_out,api_name="infer_text2img")
 
         pai_painter_btn.click(fn=pai_painter_start,
@@ -289,6 +301,10 @@ with gr.Blocks(css="main.css") as demo:
         inputs=[keyword,image_in],
         outputs=video_out
         )
+
+        get_news_btn.click(fn=get_news_run,
+        inputs=[],
+        outputs=[json_out])
 
         # inpaint_btn.click(fn = infer_inpaint, inputs = [inpaint_prompt, width, height, image_in], outputs = image_out)
         # img2img_btn.click(fn = infer_img2img, inputs = [img2img_prompt, width, height, image_in], outputs = image_out)

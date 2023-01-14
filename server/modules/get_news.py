@@ -8,8 +8,7 @@ except:
 
 FILE_PATH='../data'
 
-PROXY_HTTP = "http://127.0.0.1"
-# PROXY_SOCKS5 = "socks5://127.0.0.1:51837"
+IS_RUN=False
 
 browserLaunchOptionDict = {
     "headless": True,
@@ -164,18 +163,23 @@ bad_case=[k.strip() for k in bad_case.split('\n') if k.strip()!='']
 #前一天 已经爬取的数据
 pre_datas={}
 
-for i in range(-7,0):
-    jsons=utils.read_dir_json_byday(FILE_PATH,i)
-    for jsons_data in jsons:
-        if isinstance(jsons_data['data'], dict):
-            data=jsons_data['data']['data']
-            #print(jsons_data['filename'])
-            for d in data:
-                pre_datas[utils.get_id(d['url'])]=1
-        else:
-            print(jsons_data['filename'])
+def get_old_data(file_path=None):
+    global FILE_PATH
+    if file_path!=None:
+        FILE_PATH=file_path
+    global pre_datas
+    for i in range(-7,0):
+        jsons=utils.read_dir_json_byday(FILE_PATH,i)
+        for jsons_data in jsons:
+            if isinstance(jsons_data['data'], dict):
+                data=jsons_data['data']['data']
+                #print(jsons_data['filename'])
+                for d in data:
+                    pre_datas[utils.get_id(d['url'])]=1
+            else:
+                print(jsons_data['filename'])
 
-print('前7天 已经爬取的数据',len(pre_datas.keys()))
+    print('前7天 已经爬取的数据',len(pre_datas.keys()))
 
 
 def create_html(data):
@@ -213,6 +217,7 @@ def create_html(data):
 
 
 def get_keyword(keyword='web3',page=None):
+    global FILE_PATH
     page.goto('https://global.bing.com/search?q=%s&setmkt=en-US&setlang=en')
     page.wait_for_timeout(1000)
     page.goto("https://global.bing.com/news/search?q="+keyword+"&qft=interval%3d%227%22&form=PTFTNR")
@@ -287,6 +292,8 @@ def get_keyword(keyword='web3',page=None):
     return res['htmls']
 
 def run(playwright: Playwright) -> None:
+    global IS_RUN
+    global FILE_PATH
     browser = playwright.chromium.launch(**browserLaunchOptionDict)
     context = browser.new_context()
     page = context.new_page()
@@ -322,8 +329,17 @@ def run(playwright: Playwright) -> None:
     context.close()
     browser.close()
     utils.print_info('完成','本次共获得'+str(len(count_keywords))+'条')
+    IS_RUN=False
 
 
+def start(file_path=None):
+    global IS_RUN
+    if IS_RUN==False:
+        get_old_data(file_path)
+        IS_RUN=True
+        with sync_playwright() as playwright:
+            run(playwright)
 
-with sync_playwright() as playwright:
-    run(playwright)
+
+if __name__ == "__main__":
+    start()

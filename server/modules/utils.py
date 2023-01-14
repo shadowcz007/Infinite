@@ -61,6 +61,8 @@ def mkdir(filepath):
         print('---mkdir---')
     return filepath
 
+def get_data_file_path():
+    return os.path.join(os.path.split(get_current_dir(__file__))[0],'data')
 
 def get_current_dir(f):
     return os.path.split(os.path.abspath(f))[0]
