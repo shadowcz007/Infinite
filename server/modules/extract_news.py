@@ -207,6 +207,8 @@ def start(filepath='./data',today=0):
     }
 </style>
 <script>
+let companies = {};
+
 let cards = [...document.querySelectorAll('card')]
     let n = 10 + eval(Array.from(document.querySelectorAll('.score'), s => ~~s.getAttribute('score')).join('+')) / document.querySelectorAll('.score').length;
     console.log(n)
@@ -243,6 +245,15 @@ let cards = [...document.querySelectorAll('card')]
 
     for (let card of cards) {
         card.querySelector('.for_ai').innerText = card.querySelector('.for_ai').innerHTML.split('<br>')[0]
+         // 提取公司
+        Array.from(card.querySelectorAll('details'), details => Array.from(details.innerHTML.split('<br>'), d => {
+                if (d.match('#公司/组织/机构')) {
+                    if (!companies[d.split('#公司/组织/机构:')[1]]) companies[d.split('#公司/组织/机构:')[1]] = 0;
+                    return companies[d.split('#公司/组织/机构:')[1]]++;
+                }
+            }))
+            // console.log(Object.keys(companies))
+       
             // console.log(card.querySelector('.for_ai').innerHTML.split('<br>'))
         Array.from(card.children, (c, i) => {
             if (i > 0) {
@@ -278,7 +289,16 @@ let cards = [...document.querySelectorAll('card')]
 
     };
 
-
+     // 提取公司
+    companies = Array.from(Array.from(Object.keys(companies), key => {
+        return {
+            count: companies[key],
+            key: key
+        }
+    }).sort((a, b) => b.count - a.count), ks => ks.key)
+    document.body.insertAdjacentHTML('afterbegin', `<div style="margin:14px">公司:<br>${companies.join('<br>')}<br></div>`)
+    
+    
     let div = document.createElement('div');
     // div.setAttribute('contenteditable', true)
     div.style = `position: fixed;
