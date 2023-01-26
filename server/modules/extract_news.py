@@ -11,6 +11,8 @@ try:
 except:
     import translate
 
+FILE_PATH='../data'
+
 schema={
 "人物": "Person",
 "公司/组织/机构": "Company/Organization",
@@ -71,8 +73,12 @@ def create_html(data):
  
 
 def start(filepath='./data',today=0):
+    global FILE_PATH
+    if filepath:
+        FILE_PATH=filepath
+
     items={}
-    jsons=utils.read_dir_json_byday(filepath,today)
+    jsons=utils.read_dir_json_byday(FILE_PATH,today)
 
     #翻译
     for jsons_data in jsons:
@@ -450,8 +456,8 @@ let cards = [...document.querySelectorAll('card')]
 </html>'''
 
     
-    utils.write_file(result,filepath+"/"+d+"_extract.html")
-    utils.print_info('完成',filepath+"/"+d+"_extract.html")    
+    utils.write_file(result,FILE_PATH+"/"+d+"_extract.html")
+    utils.print_info('完成',FILE_PATH+"/"+d+"_extract.html")    
      
 
     
@@ -509,7 +515,17 @@ def extract(title,text,lang='zh'):
     else:
         return None,None
 
+
+def parse_args():
+    import argparse
+    description = "爬取每日资讯..."
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("-f", "--filepath", type=str, default='../data', help="传入地址")
     
+    return parser.parse_args()
+  
+
+if __name__ == "__main__":
     
-start('../data')
-# start('./data,-1)
+    args = parse_args()
+    start(args.filepath)

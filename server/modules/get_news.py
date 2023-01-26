@@ -1,5 +1,6 @@
-from playwright.sync_api import Playwright, sync_playwright, expect
+from playwright.sync_api import Playwright, sync_playwright
 
+import argparse
 
 try:
     from . import utils
@@ -10,59 +11,7 @@ FILE_PATH='../data'
 
 IS_RUN=False
 
-browserLaunchOptionDict = {
-    "headless": True,
-    # "proxy": {
-    #     "server": PROXY_HTTP,
-    # }
-}
-
-keywords='''
-元宇宙
-metaverse
-DAO
-AIGC
-chatGPT
-数字艺术
-crypto art 
-Virtual Spaces 
-digital human 
-meta-human 
-数字人 
-虚拟人 
-web3 
-nft 
-Stable Diffusion 
-Extended Reality
-Virtual Reality
-Augmented Reality
-增强现实 
-虚拟现实 
-虚拟世界
-开发者社区
-AI大模型
-WebXR 
-Artificial intelligence 
-人工智能
-脑机接口 
-AI大模型 
-游戏引擎
-数字资产
-深度学习
-机器学习
-自然语言处理
-计算机视觉
-游戏开发
-数字化
-可视化
-可交互式
-元宇宙服装
-Product-led Growth
-产品设计
-'''
-
-keywords=[k.strip() for k in keywords.split('\n') if k.strip()!='']
-
+KEYWORDS=[]
 
 good_sites='''
  medium.com
@@ -159,6 +108,9 @@ Search Videos'''
 
 bad_case=[k.strip() for k in bad_case.split('\n') if k.strip()!='']
 
+def do_keywords(text=''):
+    return [k.strip() for k in text.split('\n') if k.strip()!='']
+
 
 #前一天 已经爬取的数据
 pre_datas={}
@@ -168,17 +120,21 @@ def get_old_data(file_path=None):
     if file_path!=None:
         FILE_PATH=file_path
     global pre_datas
-    for i in range(-7,0):
-        jsons=utils.read_dir_json_byday(FILE_PATH,i)
-        for jsons_data in jsons:
-            if isinstance(jsons_data['data'], dict):
-                data=jsons_data['data']['data']
-                #print(jsons_data['filename'])
-                for d in data:
-                    pre_datas[utils.get_id(d['url'])]=1
-            else:
-                print(jsons_data['filename'])
+    try:
+        for i in range(-7,0):
+            jsons=utils.read_dir_json_byday(FILE_PATH,i)
+            for jsons_data in jsons:
+                if isinstance(jsons_data['data'], dict):
+                    data=jsons_data['data']['data']
+                    #print(jsons_data['filename'])
+                    for d in data:
+                        pre_datas[utils.get_id(d['url'])]=1
+                else:
+                    print(jsons_data['filename'])
+    except:
+        print('目录无数据')
 
+    print('目录地址：',FILE_PATH)
     print('前7天 已经爬取的数据',len(pre_datas.keys()))
 
 
@@ -225,10 +181,10 @@ def get_keyword(keyword='web3',page=None):
     
     items={}
 
-    for i in range(10):
+    for i in range(3):
         page.wait_for_timeout(800)
         page.mouse.wheel(0, 1000)
-        page.wait_for_timeout(1200)
+        page.wait_for_timeout(1100)
         html = page.evaluate('''var cards=document.querySelectorAll('.news-card');
         cards=Array.from(cards,c=>{
                
@@ -291,9 +247,14 @@ def get_keyword(keyword='web3',page=None):
   
     return res['htmls']
 
+
 def run(playwright: Playwright) -> None:
     global IS_RUN
     global FILE_PATH
+    global KEYWORDS
+    browserLaunchOptionDict = {
+        "headless": True
+    }
     browser = playwright.chromium.launch(**browserLaunchOptionDict)
     context = browser.new_context()
     page = context.new_page()
@@ -303,7 +264,7 @@ def run(playwright: Playwright) -> None:
     count_keywords=[]
 
     htmls_data=[]
-    for k in keywords:
+    for k in KEYWORDS:
         try:
             htmls=get_keyword(k,page)
             for h in htmls:
@@ -332,14 +293,72 @@ def run(playwright: Playwright) -> None:
     IS_RUN=False
 
 
-def start(file_path=None):
+def start(file_path=None,keywords=''):
     global IS_RUN
+    global KEYWORDS
     if IS_RUN==False:
+        # keywords
+        KEYWORDS=do_keywords(keywords)
+        print('目标关键词',KEYWORDS)
+        # file_path
         get_old_data(file_path)
         IS_RUN=True
         with sync_playwright() as playwright:
             run(playwright)
 
 
+def parse_args():
+    description = "爬取每日资讯..."
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("-f", "--filepath", type=str, default=None, help="传入地址")
+    parser.add_argument("-k", "--keywords", type=str, default='''
+        元宇宙
+        metaverse
+        DAO
+        AIGC
+        chatGPT
+        数字艺术
+        crypto art 
+        Virtual Spaces 
+        digital human 
+        meta-human 
+        数字人 
+        虚拟人 
+        web3 
+        nft 
+        Stable Diffusion 
+        Extended Reality
+        Virtual Reality
+        Augmented Reality
+        增强现实 
+        虚拟现实 
+        虚拟世界
+        开发者社区
+        AI大模型
+        WebXR 
+        Artificial intelligence 
+        人工智能
+        脑机接口 
+        AI大模型 
+        游戏引擎
+        数字资产
+        深度学习
+        机器学习
+        自然语言处理
+        计算机视觉
+        游戏开发
+        数字化
+        可视化
+        可交互式
+        元宇宙服装
+        Product-led Growth
+        产品设计
+        ''', help="传入关键词")
+    return parser.parse_args()
+
+
+
 if __name__ == "__main__":
-    start()
+    
+    args = parse_args()
+    start(args.filepath,args.keywords)
