@@ -1,2 +1,11 @@
 data
+<<<<<<< HEAD
+
+desktop/node_modules
+
+server/data
+
+model/*
+=======
 *.blend
+>>>>>>> parent of ddb7227 (1)
