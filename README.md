@@ -9,3 +9,7 @@ AUI，增强用户界面，用什么呢？用数字人+AI+游戏引擎
 
 # 前端
 web - 谷歌的model-viewer
+
+# 每日爬虫
+python get_news.py -f C:\Users\38957\Documents\GitHub\MetaverseDaily\data
+python extract_news.py -f C:\Users\38957\Documents\GitHub\MetaverseDaily\data
