@@ -19,6 +19,8 @@ import modules.pai_painter as pai_painter
 
 import modules.get_news as get_news
 
+import modules.text_classification as text_classification
+
 # 保存数据的路径
 data_file_path=utils.get_data_file_path()
 
@@ -107,6 +109,10 @@ def count_user_feedback(keyword):
             is_count=True
     return count
 
+#文本分类，从文章提取核心信息
+def text_classification_run(keyword):
+    res=text_classification.start(keyword)
+    return res
 
 def tts_init(wav_file_input):
     wav_file=utils.write_wav(wav_file_input[1],wav_file_input[0],'./data/wav_file.wav')
@@ -186,16 +192,14 @@ with gr.Blocks(css="main.css") as demo:
                 screen_y=gr.Slider(0, 1500, value = 380, label = 'y')
                 screen_width=gr.Slider(1, 1024, value = 900, label = 'width')
                 screen_height=gr.Slider(1, 1024, value = 960, label = 'height')
-            with gr.Row(scale=0.5 ):
-                shotscreen_btn=gr.Button("截图区域配置")
-                shotscreen_and_ocr_btn=gr.Button("截图&OCR")
-                http_server_btn=gr.Button("http服务")
-                model_id_input=gr.Dropdown(label='huggface-模型-id',value=taiyi_sd.get_model_list()[0],choices=taiyi_sd.get_model_list())
-                # model_id_input = gr.Textbox(label = '风格-预设模板',value='shadow/duckduck-roast_duck-heywhale')
-                update_pipe_opts_btn=gr.Button('更新参数')
-                get_news_btn=gr.Button('爬取今天资讯')
+            
+            with gr.Row(scale=0.3):
+                keyword = gr.Textbox(label = 'prompt-用户输入,tts的文字')
+                style_input = gr.Textbox(label = '风格-预设模板')
             
             with gr.Row(scale=0.5 ):
+                model_id_input=gr.Dropdown(label='huggface-模型-id',value=taiyi_sd.get_model_list()[0],choices=taiyi_sd.get_model_list())
+                # model_id_input = gr.Textbox(label = '风格-预设模板',value='shadow/duckduck-roast_duck-heywhale')
                 guide = gr.Slider(2, 15, value = 7, label = '文本引导强度(guidance scale)')
                 steps = gr.Slider(10, 60, value = 30, step = 1, label = '迭代次数(inference steps)')
                 width = gr.Slider(384, 768, value = 512, step = 64, label = '宽度(width)')
@@ -207,35 +211,42 @@ with gr.Blocks(css="main.css") as demo:
             with gr.Row(scale=0.5):
                 wav_file_input = gr.Audio(label="录音",type="numpy")
                 tts_radio=gr.Radio(["asr-chatbot", "text-chatbot","tts","lip"])
-                tts_lip_btn = gr.Button("语音生成")
-                tts_init_btn=gr.Button('克隆声音')
-
-            with gr.Row(scale=0.5):
                 video_input = gr.Video()
-                fom_btn=gr.Button("fom生成")
-                wav2lip_btn=gr.Button("虚拟人播报生成")
-
+ 
             with gr.Row(scale=0.5):
                 pai_painter_btn = gr.Button("pai_painter生成")
             
         with gr.Column(scale=1, ):
-            
-            keyword = gr.Textbox(label = 'prompt-用户输入,tts的文字')
+            with gr.Row(scale=0.5 ):
+                shotscreen_btn=gr.Button("截图区域配置")
+                shotscreen_and_ocr_btn=gr.Button("截图&OCR")
+                http_server_btn=gr.Button("http服务")
 
-            style_input = gr.Textbox(label = '风格-预设模板')
+            with gr.Row(scale=0.5):
+                tts_lip_btn = gr.Button("语音生成")
+                tts_init_btn=gr.Button('克隆声音')
+                fom_btn=gr.Button("fom生成")
+                wav2lip_btn=gr.Button("虚拟人播报生成")
+            with gr.Row(scale=0.5):
+                update_pipe_opts_btn=gr.Button('更新配置参数')
+                
+                get_user_input_and_prompt_btn=gr.Button("截屏提取最新回复作为输入")
             
-            get_user_input_and_prompt_btn=gr.Button("截屏提取最新回复作为输入")
-         
-            use_pipe_opts_btn = gr.Button("根据设定的参数生成图像")
+                use_pipe_opts_btn = gr.Button("根据设定的参数生成图像")
 
-            submit_btn = gr.Button("根据prompt和参数生成图像")
-            shotscreen_and_ocr_and_match_keyword_btn=gr.Button("截屏计算投票")
+                submit_btn = gr.Button("根据prompt和参数生成图像")
+
+                shotscreen_and_ocr_and_match_keyword_btn=gr.Button("截屏计算投票")
+
+        with gr.Column(scale=0.5, ):
+            get_news_btn=gr.Button('爬取今天资讯')
+            text_classification_btn=gr.Button("提取文章核心信息")
             
                 
-    with gr.Row(scale=0.5):
-        video_out=gr.Video(label='结果')
-        image_out = gr.Image(label = '输出(output)')
-        json_out=gr.JSON(label='结果')    
+        with gr.Column(scale=0.5):
+            video_out=gr.Video(label='结果')
+            image_out = gr.Image(label = '输出(output)')
+            json_out=gr.JSON(label='结果')    
             
     with gr.Row():     
         ex = gr.Examples(examples, fn=taiyi_sd.infer_text2img, inputs=[keyword,style_input, model_id_input,guide, steps, width, height], outputs=image_out)
@@ -282,6 +293,11 @@ with gr.Blocks(css="main.css") as demo:
         inputs =[keyword],
         outputs=json_out,
         api_name="count_user_feedback")
+
+        text_classification_btn.click(fn=text_classification_run,
+        inputs=keyword,
+        outputs=json_out,
+        api_name="text_classification")
 
         tts_init_btn.click(fn=tts_init,
         inputs=wav_file_input,
