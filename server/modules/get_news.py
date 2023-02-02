@@ -181,10 +181,10 @@ def get_keyword(keyword='web3',page=None):
     
     items={}
 
-    for i in range(3):
+    for i in range(2):
         page.wait_for_timeout(800)
         page.mouse.wheel(0, 1000)
-        page.wait_for_timeout(1100)
+        page.wait_for_timeout(990)
         html = page.evaluate('''var cards=document.querySelectorAll('.news-card');
         cards=Array.from(cards,c=>{
                
@@ -313,46 +313,102 @@ def parse_args():
     parser.add_argument("-f", "--filepath", type=str, default=None, help="传入地址")
     parser.add_argument("-k", "--keywords", type=str, default='''
         元宇宙
-        metaverse
-        DAO
-        AIGC
-        chatGPT
-        数字艺术
-        crypto art 
-        Virtual Spaces 
-        digital human 
-        meta-human 
-        数字人 
-        虚拟人 
-        web3 
-        nft 
-        Stable Diffusion 
-        Extended Reality
-        Virtual Reality
-        Augmented Reality
-        增强现实 
-        虚拟现实 
-        虚拟世界
-        开发者社区
-        AI大模型
-        WebXR 
-        Artificial intelligence 
-        人工智能
-        脑机接口 
-        AI大模型 
-        游戏引擎
-        数字资产
-        深度学习
-        机器学习
-        自然语言处理
-        计算机视觉
-        游戏开发
-        数字化
-        可视化
-        可交互式
-        元宇宙服装
-        Product-led Growth
-        产品设计
+metaverse
+DAO
+AIGC
+chatGPT
+数字艺术
+crypto art
+Virtual Spaces
+digital human
+meta-human
+数字人
+虚拟人
+web3
+nft
+Stable Diffusion
+EleutherAI 
+Extended Reality
+Virtual Reality
+Augmented Reality
+增强现实
+虚拟现实
+虚拟世界
+开发者社区
+AI大模型
+WebXR
+Artificial intelligence
+人工智能
+脑机接口
+游戏引擎
+数字资产
+深度学习
+机器学习
+自然语言处理
+计算机视觉
+游戏开发
+数字化
+可视化
+可交互式
+元宇宙服装
+Product-led Growth
+产品设计
+AI
+AI写作工具
+AI艺术家
+AR
+Accomplice.ai
+AltspaceVR
+Artbreeder
+CHATGPT
+CHATGPT应用指南
+DALL·E
+Dall-E 2
+DreamBooth
+GFPGAN
+GPT-3
+GPT3
+Getty Images
+InstructPix2Pix
+OPENAI
+PhotoRoom
+Plai Labs
+QuickNode
+Roblox
+Stability AI
+StyleGAN-T
+TPS Motion
+TTS
+Unstable Diffusion
+VR
+Voldex
+XR
+a16z
+action
+haiper3d
+nanoGPT
+producthunt
+stable diffusion
+talking face
+whisper
+人工智能艺术
+创新公司
+增强现实应用程序
+开源
+开源社区
+微软
+提示工程
+搜索引擎
+智能产品
+混合现实耳机
+游戏
+知识引擎
+硬件
+社交平台
+设计工具
+语音识别
+谷歌
+面部识别
         ''', help="传入关键词")
     return parser.parse_args()
 

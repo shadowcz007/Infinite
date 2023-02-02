@@ -84,6 +84,20 @@ def read_dir_json_byday(filepath,day=0):
                 "data":load_json(filepath+'/'+filename)
             })
     return res
+
+#按照当前日期获取处理好的html文件 2022-12-15_extract.html
+def read_dir_extract_html_byday(filepath,day=0):
+    res=None
+    filenames=get_dir_filenames(filepath)
+    d=get_date_str(day).split(' ')[0]+'_extract.html'
+    for filename in filenames:
+        if d in filename:
+            res={
+                "filepath":filepath+'/'+filename,
+                "filename":filename,
+                # "data":load_json(filepath+'/'+filename)
+            }
+    return res
     
 
 # 获取日期，0 是当天，-1是前天

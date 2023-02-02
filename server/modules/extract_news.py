@@ -80,6 +80,8 @@ def start(filepath='./data',today=0):
     items={}
     jsons=utils.read_dir_json_byday(FILE_PATH,today)
 
+   
+
     #翻译
     for jsons_data in jsons:
         data=jsons_data['data']
@@ -457,7 +459,9 @@ let cards = [...document.querySelectorAll('card')]
 
     
     utils.write_file(result,FILE_PATH+"/"+d+"_extract.html")
-    utils.print_info('完成',FILE_PATH+"/"+d+"_extract.html")    
+    update_index()
+    utils.print_info('完成',FILE_PATH+"/"+d+"_extract.html")
+
      
 
     
@@ -515,6 +519,15 @@ def extract(title,text,lang='zh'):
     else:
         return None,None
 
+def update_index():
+    global FILE_PATH
+    #html
+    htmls=[]
+    for i in range(-7,1):
+        e_html=utils.read_dir_extract_html_byday(FILE_PATH,i)
+        if e_html:
+            htmls.append('data/'+e_html['filename'])
+    utils.write_json(htmls,FILE_PATH+'/index_extract_html.json')
 
 def parse_args():
     import argparse
@@ -528,4 +541,5 @@ def parse_args():
 if __name__ == "__main__":
     
     args = parse_args()
+    
     start(args.filepath)
