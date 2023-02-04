@@ -78,11 +78,13 @@ def read_dir_json_byday(filepath,day=0):
     d=get_date_str(day).split(' ')[0]+'.json'
     for filename in filenames:
         if d in filename:
-            res.append({
-                "filepath":filepath+'/'+filename,
-                "filename":filename,
-                "data":load_json(filepath+'/'+filename)
-            })
+            data=load_json(filepath+'/'+filename)
+            if data:
+                res.append({
+                    "filepath":filepath+'/'+filename,
+                    "filename":filename,
+                    "data":data
+                })
     return res
 
 #按照当前日期获取处理好的html文件 2022-12-15_extract.html
@@ -111,9 +113,13 @@ def get_id(text):
 
 
 def load_json(filepath):
-    with open(filepath,'r') as load_f:
-        load_dict = json.load(load_f)
-        return load_dict
+    try:
+        with open(filepath,'r') as load_f:
+            load_dict = json.load(load_f)
+            return load_dict
+    except:
+        return 
+    
 
 
 def is_contain_zh(check_str):
