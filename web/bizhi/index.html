@@ -1,31 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>打样工厂</title>
     <script src="https://cdn.bootcdn.net/ajax/libs/svg.js/3.1.1/svg.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/randomcolor@0.6.2/randomColor.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tweakpane@3.1.0/dist/tweakpane.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tweakpane-image-plugin@1.1.3/dist/tweakpane-image-plugin.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.12/dist/cropper.min.js"></script>
-    <script src="sloarToLunar.js"></script>
+    <script src="/assets/sloarToLunar.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.12/dist/cropper.min.css">
     <style>
-        svg{
+        svg {
             height: 600px;
         }
-        #pane{
+        
+        #pane {
             width: 320px;
             position: absolute;
             right: 24px;
             top: 12px;
         }
-        .item{
+        
+        .item {
             display: flex;
         }
-        .modal{
+        
+        .modal {
             position: fixed;
             top: 0;
             left: 0;
@@ -36,12 +40,14 @@
             overflow: hidden;
             outline: 0;
         }
+        
         .modal-dialog {
             position: relative;
             width: auto;
             margin: 0.5rem;
             pointer-events: none;
         }
+        
         .modal-content {
             position: relative;
             display: flex;
@@ -50,309 +56,345 @@
             pointer-events: auto;
             background-color: #fff;
             background-clip: padding-box;
-            border: 1px solid rgba(0,0,0,.2);
+            border: 1px solid rgba(0, 0, 0, .2);
             border-radius: 0.3rem;
             outline: 0;
         }
+        
         .modal-body {
             position: relative;
             flex: 1 1 auto;
             padding: 1rem;
         }
+        
         .cropper-hidden {
             display: none !important;
         }
-        .show{
+        
+        .show {
             overflow-x: hidden;
             overflow-y: auto;
             display: block;
         }
-        #image-crop{
+        
+        #image-crop {
             height: 50vh;
         }
-       
     </style>
 </head>
-<body>
 
+<body>
+    <h4>打样工厂</h4>
+    <p>粘贴图片，立即生产</p>
+    <select id="select-template">
+        <option value ="/assets/iphone.svg">iphone样机</option>
+        <option value ="/assets/baozheng.svg">等身抱枕</option>
+        <option value="opel">Opel</option>
+        <option value="audi">Audi</option>
+      </select>
     <div class="modal" id="modal">
         <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-body">
-                <div class="img-container">
-                    <img id="image-crop" class="cropper-hidden">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <div class="img-container">
+                        <img id="image-crop" class="cropper-hidden">
+                    </div>
+                    <button id="crop-btn">裁切</button>
+                    <button id="close-btn">取消</button>
                 </div>
-                <button id="crop-btn">裁切</button>
-                <button id="close-btn">取消</button>
             </div>
-          </div>
         </div>
     </div>
 
     <div id="pane"></div>
     <script>
-        const _IPHONESIZE={
-            "4(s)":"640,960",
-            "5(s/se)":"640,1136",
-            "6(s)/7/8":"750,1334",
-            "6(s)/7/8 Plus":"1242,2208",
-            "X/Xs/11 Pro":"1125,2436",
-            "Xr/11| 6.1":"828,1792",
-            "Xs Max/11 Pro Max":"1242,2688",
-            "12/13 mini":"1080,2340",
-            "12/13/14、12/13":"1170,2532",
-            "12/13、14 Plus":"1284,2778",
-            "14 Pro":"1179,2556",
-            "14 Pro Max":"1290,2796"
+        const _IPHONESIZE = {
+            "4(s)": "640,960",
+            "5(s/se)": "640,1136",
+            "6(s)/7/8": "750,1334",
+            "6(s)/7/8 Plus": "1242,2208",
+            "X/Xs/11 Pro": "1125,2436",
+            "Xr/11| 6.1": "828,1792",
+            "Xs Max/11 Pro Max": "1242,2688",
+            "12/13 mini": "1080,2340",
+            "12/13/14、12/13": "1170,2532",
+            "12/13、14 Plus": "1284,2778",
+            "14 Pro": "1179,2556",
+            "14 Pro Max": "1290,2796"
         };
 
-        window.cards=[];
+        window.cards = [];
+        window.svgFilePath = '/assets/iphone.svg'
 
-        document.addEventListener('paste',e=>{
-                pasteImg(event);
-                return false;
-            });
+        document.querySelector('#select-template').addEventListener('change', e => {
+            let index = e.target.selectedIndex;
+            window.svgFilePath = e.target.options[index].value
+                // console.log(e.target.selectedIndex, e.target.options[e.target.selectedIndex].value)
+        })
 
-       
-        document.querySelector('#close-btn').addEventListener('click',e=>{
-            document.querySelector('#modal').classList.remove('show');
-            Array.from(window.cards,card=>card.isFocus=false);
-        });
-        document.querySelector('#crop-btn').addEventListener('click',e=>{
-            let base64=window._cropper.getCroppedCanvas().toDataURL('image/png');
-            
-            let card=window.cards.filter(c=>c.isFocus)[0];
-            if(card)card.replaceImage(base64);
-
-            document.querySelector('#modal').classList.remove('show');
-            Array.from(window.cards,card=>card.isFocus=false);
+        // 粘贴事件
+        document.addEventListener('paste', e => {
+            pasteImg(event, window.svgFilePath);
+            return false;
         });
 
-            
 
-        function cropImage(url,ratio=1){
+        document.querySelector('#close-btn').addEventListener('click', e => {
+            document.querySelector('#modal').classList.remove('show');
+            Array.from(window.cards, card => card.isFocus = false);
+        });
 
-                document.querySelector('#modal').classList.add('show');
-                let image=document.querySelector('#image-crop');
-                image.src=url;
-                if(window._cropper) {
-                    window._cropper.destroy();
-                    window._cropper=null;
-                }
-                window._cropper = new Cropper(image, {
-                    dragMode: 'move',
-                    aspectRatio: ratio,
-                    autoCropArea: 0.65,
-                    restore: false,
-                    guides: false,
-                    center: false,
-                    highlight: false,
-                    cropBoxMovable: false,
-                    cropBoxResizable: false,
-                    toggleDragModeOnDblclick: false,
-                });
+        // 
+        document.querySelector('#crop-btn').addEventListener('click', e => {
+            let base64 = window._cropper.getCroppedCanvas().toDataURL('image/png');
 
+            let card = window.cards.filter(c => c.isFocus)[0];
+            if (card) card.replaceImage(window._cropper._replaceImageId, base64);
+
+            document.querySelector('#modal').classList.remove('show');
+            Array.from(window.cards, card => card.isFocus = false);
+        });
+
+
+
+        function cropImage(url, ratio = 1, replaceImageId = 'poster-1') {
+
+            document.querySelector('#modal').classList.add('show');
+            let image = document.querySelector('#image-crop');
+            image.src = url;
+            if (window._cropper) {
+                window._cropper.destroy();
+                window._cropper = null;
             }
+            window._cropper = new Cropper(image, {
+                dragMode: 'move',
+                aspectRatio: ratio,
+                autoCropArea: 0.65,
+                restore: false,
+                guides: false,
+                center: false,
+                highlight: false,
+                cropBoxMovable: false,
+                cropBoxResizable: false,
+                toggleDragModeOnDblclick: false,
+            });
+            window._cropper._replaceImageId = replaceImageId;
+        }
 
-            function blobToDataURL(blob) {
-                let reader = new FileReader();
-                return new Promise((res,rej)=>{
-                    reader.onload = function(evt) {
+        function blobToDataURL(blob) {
+            let reader = new FileReader();
+            return new Promise((res, rej) => {
+                reader.onload = function(evt) {
                     let base64 = evt.target.result;
                     res(base64);
                 };
                 reader.readAsDataURL(blob);
-                });
-            };
-        
-            function pasteImg(e){
-                 // console.log(e)
-                if (e.clipboardData.items) {
-                   let element = e.clipboardData.items;
-                    for (let i = 0; i < element.length; ++i) {
-                        if (element[i].kind == 'file' && element[i].type.indexOf('image/') !== -1) {
-                            var blob = element[i].getAsFile();
-                            
-                            blobToDataURL(blob).then(async base64=>{
-                                let card=new Card();
-                                let div=await card.create();
-                                setTimeout(()=>{
-                                    card.replaceImage(base64);
+            });
+        };
+
+        function pasteImg(e, svgFilePath = '2.svg') {
+            // console.log(e)
+            if (e.clipboardData.items) {
+                let element = e.clipboardData.items;
+                for (let i = 0; i < element.length; ++i) {
+                    if (element[i].kind == 'file' && element[i].type.indexOf('image/') !== -1) {
+                        var blob = element[i].getAsFile();
+
+                        blobToDataURL(blob).then(async base64 => {
+                            let card = new Card(svgFilePath);
+                            let div = await card.create();
+                            setTimeout(() => {
+                                card.replaceImage('poster-1', base64);
+                                card.update();
+                                card.t = setInterval(() => {
                                     card.update();
-                                    card.t=setInterval(()=>{
-                                        card.update();
-                                    },10000);
-                                    document.body.appendChild(div);
-                                    window.cards.push(card);
-                                },1000);
-                               
-                            })
-                        }
+                                }, 10000);
+                                document.body.appendChild(div);
+                                window.cards.push(card);
+                            }, 1000);
 
+                        })
                     }
-                } else {
-                    alert('non-chrome');
+
                 }
+            } else {
+                alert('non-chrome');
             }
-           
+        }
 
-            class Card{
-                constructor(filename='2.svg'){
-                    this.isFocus=false;
-                    this._RUN={};
-                    this._PARAMS={};
-                    this.svgStr=this.init(filename);
-                    
+
+        class Card {
+            constructor(filename = '2.svg') {
+                this.isFocus = false;
+                // 需要动态改变的内容槽位
+                // 文本颜色 壁纸
+                this._RUN = {};
+
+                this._PARAMS = {};
+                this.svgStr = this.init(filename);
+
+            }
+            init(filename) {
+                return fetch(filename).then(r => r.text());
+            }
+            async create() {
+                let that = this;
+                let div = document.createElement('div');
+                div.className = 'item';
+
+                let paneDiv = document.createElement('div');
+
+                let pane = new Tweakpane.Pane({
+                    container: paneDiv
+                });
+                this.pane = pane;
+                pane.registerPlugin(TweakpaneImagePlugin);
+
+                pane.on('change', e => {
+                    console.log(e);
+                    if (that._RUN[e.presetKey]) that._RUN[e.presetKey](e.value);
+                });
+
+
+                let s = SVG();
+                s.svg(await that.svgStr);
+                that.svg = s.children()[0];
+                // 修复text的bug
+                Array.from(['text', 'textPath', 'tspan'], s => {
+                    Array.from(that.svg.find(s), t => t.dom = {});
+                });
+                // 文本颜色
+                let textColor = that.svg.findOne('#color-text');
+                // console.log(textColor)
+                if (textColor) {
+                    that._PARAMS['color-text'] = textColor.attr('fill');
+                    that._RUN['color-text'] = value => textColor.attr('fill', value);
+                    pane.addInput(that._PARAMS, 'color-text');
                 }
-                init(filename){
-                   return fetch(filename).then(r => r.text());
-                }
-               async create(){
-                    let that=this;
-                    let div=document.createElement('div');
-                    div.className='item';
 
-                    let paneDiv=document.createElement('div');
-
-                    let pane = new Tweakpane.Pane({
-                        container:paneDiv
-                    });
-                    this.pane=pane;
-                    pane.registerPlugin(TweakpaneImagePlugin);
-                    
-                    pane.on('change', e => {
-                        console.log(e);
-                        if(that._RUN[e.presetKey])that._RUN[e.presetKey](e.value);
-                    });
-                     
-
-                        let s = SVG();
-                        s.svg(await that.svgStr);
-                        that.svg=s.children()[0];
-                        // 修复text的bug
-                        Array.from(['text','textPath','tspan'],s=>{
-                            Array.from(that.svg.find(s),t=>t.dom={});
-                        });
-                        // 文本颜色
-                        that._PARAMS['color-text']=that.svg.findOne('#color-text').attr('fill');
-                        that._RUN['color-text']=value=>that.svg.findOne('#color-text').attr('fill',value);
-                        // 壁纸
-                        that._PARAMS['poster']=that.svg.findOne('#poster').attr('xlink:href');
-                        that._PARAMS['poster-ratio']=parseFloat(that.svg.findOne('#poster').attr('width'))/parseFloat(that.svg.findOne('#poster').attr('height'));
-                        that._RUN['poster']=img=> console.log(1);
-
-                        pane.addInput(that._PARAMS, 'color-text');
-
-                        pane.addInput(that._PARAMS, 'poster', {
+                // 壁纸
+                Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9], i => {
+                    let id = 'poster-' + i;
+                    let poster = that.svg.findOne('#' + id);
+                    if (poster) {
+                        that._PARAMS[id] = poster.attr('xlink:href');
+                        that._PARAMS[id + '-ratio'] = parseInt(poster.attr('width')) / parseInt(poster.attr('height'));
+                        that._RUN[id] = img => console.log(1);
+                        pane.addInput(that._PARAMS, id, {
                             view: 'input-image',
                             imageFit: 'contain',
                         });
-
                         pane.addButton({
                             title: 'crop',
-                            label: 'image-crop',  
-                        }).on('click',()=>{
-                            that.isFocus=true;
-                            cropImage(that._PARAMS['poster'].src,that._PARAMS['poster-ratio']);
+                            label: 'image-crop',
+                        }).on('click', () => {
+                            that.isFocus = true;
+                            cropImage(that._PARAMS[id].src, that._PARAMS[id + '-ratio'], id);
+                        });
+                    }
+                })
+
+
+
+                pane.addButton({
+                    title: 'get',
+                    label: 'export',
+                }).on('click', () => {
+                    svg2base64(that.svg.svg(), 'nft').then(url => {
+                        let filename = '' + (new Date()).getTime();
+                        getImageSize(url).then(res => {
+                            downloadFile(url, filename + '_preview_' + res[0] + '_' + res[1] + '.png')
                         });
 
-                        pane.addButton({
-                            title: 'get',
-                            label: 'export',  
-                        }).on('click',()=>{
-                            svg2base64(that.svg.svg(), 'nft').then(url => {
-                                            let filename=''+(new Date()).getTime();
-                                            getImageSize(url).then(res=>{
-                                                downloadFile(url,filename+'_preview_'+res[0]+'_'+res[1]+'.png')
-                                            });
+                        // getImageSize(that._PARAMS['poster'].src).then(res => {
+                        //     downloadFile(that._PARAMS['poster'].src, filename + '_poster_' + res[0] + '_' + res[1] + '.png')
+                        // });
 
-                                            getImageSize(that._PARAMS['poster'].src).then(res=>{
-                                                downloadFile(that._PARAMS['poster'].src,filename+'_poster_'+res[0]+'_'+res[1]+'.png')
-                                            });
+                    })
+                });
 
-                                        })
-                        });
-                        
-                        div.appendChild(that.svg.node);
-                        div.appendChild(paneDiv);
+                div.appendChild(that.svg.node);
+                div.appendChild(paneDiv);
 
-                        return div
+                return div
 
-                }
-                replaceImage(base64){
-                    this.svg.findOne('#poster').attr('xlink:href',base64);
-                    this._PARAMS['poster']=base64;
-                    this.pane.refresh();
-                }
-                getDate(){
-                    return new Date();
-                }
-                updateDate(){
-                    
-                    let d=this.getDate();
-                    let t=(d.getMonth()+1)+'月'+d.getDate()+'日周'+[
-                        '一','二','三','四','五','六','日'
-                    ][d.getDay()-1];
-                    if(t.length<8) this.svg.findOne('#date-text tspan').attr('x','35');
+            }
+            replaceImage(id, base64) {
+                this.svg.findOne('#' + id).attr('xlink:href', base64);
+                this._PARAMS[id] = base64;
+                this.pane.refresh();
+            }
+            getDate() {
+                return new Date();
+            }
+            updateDate() {
+                let d = this.getDate();
+                let t = (d.getMonth() + 1) + '月' + d.getDate() + '日周' + [
+                    '日', '一', '二', '三', '四', '五', '六'
+                ][d.getDay()];
+                if (this.svg.findOne('#date-text tspan')) {
+                    if (t.length < 8) this.svg.findOne('#date-text tspan').attr('x', '35');
                     this.svg.findOne('#date-text tspan').text(t);
                 }
-                updateLunarDate(){
-                    let d=this.getDate();
-                    let lunar=sloarToLunar(d.getFullYear(),d.getMonth()+1,d.getDate());
-                    let t=lunar.lunarYear+'年'+lunar.lunarMonth+'月'+lunar.lunarDay;
-                    this.svg.findOne('#lunar-text tspan').text(t);
-                }
-                updateTimeText(){
-                    let d=this.getDate();
-                    let h=d.getHours();
-                    let m=d.getMinutes();
-                    let t=(String(h).length==1?('0'+h):h)+':'+(String(m).length==1?('0'+m):m);
-                    this.svg.findOne('#time-text tspan').text(t);
-                }
-                update(){
-                    this.updateTimeText();
-                    this.updateLunarDate();
-                    this.updateDate();
-                }
-            }
 
-           
+            }
+            updateLunarDate() {
+                let d = this.getDate();
+                let lunar = sloarToLunar(d.getFullYear(), d.getMonth() + 1, d.getDate());
+                let t = lunar.lunarYear + '年' + lunar.lunarMonth + '月' + lunar.lunarDay;
+                if (this.svg.findOne('#lunar-text tspan')) this.svg.findOne('#lunar-text tspan').text(t);
+            }
+            updateTimeText() {
+                let d = this.getDate();
+                let h = d.getHours();
+                let m = d.getMinutes();
+                let t = (String(h).length == 1 ? ('0' + h) : h) + ':' + (String(m).length == 1 ? ('0' + m) : m);
+                if (this.svg.findOne('#time-text tspan')) this.svg.findOne('#time-text tspan').text(t);
+            }
+            update() {
+                this.updateTimeText();
+                this.updateLunarDate();
+                this.updateDate();
+            }
+        }
 
-            function getImageSize(url){
-                let im = new Image();
-                return new Promise((res,rej)=>{
-                    im.onload=()=>res([im.naturalWidth,im.naturalHeight]);
-                    im.src = url;
-                })
-            }
 
-            function createCanvas(width, height) {
-                let canvas = document.createElement('canvas')
-                canvas.width = width
-                canvas.height = height
-                return canvas
-            }
-            
-            function str2URL(data, type) {
-                // svg "image/svg+xml;charset=utf-8"
-                // console.log(data)
-                var blob = new Blob([data], {
-                    type: type
-                })
-                return URL.createObjectURL(blob)
-            }
-            
-            function downloadFile(url, filename) {
-                // console.log(url)
-                if (!url) return
-                let link = document.createElement('a')
-                link.style.display = 'none'
-                link.href = url
-                link.setAttribute('download', filename)
-                    // document.body.appendChild(link) 
-                link.click()
-                    // document.body.removeChild(link);
-            }
+
+        function getImageSize(url) {
+            let im = new Image();
+            return new Promise((res, rej) => {
+                im.onload = () => res([im.naturalWidth, im.naturalHeight]);
+                im.src = url;
+            })
+        }
+
+        function createCanvas(width, height) {
+            let canvas = document.createElement('canvas')
+            canvas.width = width
+            canvas.height = height
+            return canvas
+        }
+
+        function str2URL(data, type) {
+            // svg "image/svg+xml;charset=utf-8"
+            // console.log(data)
+            var blob = new Blob([data], {
+                type: type
+            })
+            return URL.createObjectURL(blob)
+        }
+
+        function downloadFile(url, filename) {
+            // console.log(url)
+            if (!url) return
+            let link = document.createElement('a')
+            link.style.display = 'none'
+            link.href = url
+            link.setAttribute('download', filename)
+                // document.body.appendChild(link) 
+            link.click()
+                // document.body.removeChild(link);
+        }
 
         function svg2base64(svgStr = null, type = 'png', width = null, height = null) {
             if (!svgStr) return
@@ -372,8 +414,7 @@
                 img.src = url
             })
         }
-
-
     </script>
 </body>
+
 </html>
