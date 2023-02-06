@@ -524,9 +524,12 @@ def update_index():
     #html
     htmls=[]
     for i in range(-7,1):
-        e_html=utils.read_dir_extract_html_byday(FILE_PATH,i)
-        if e_html:
-            htmls.append('data/'+e_html['filename'])
+        try:
+            e_html=utils.read_dir_extract_html_byday(FILE_PATH,i)
+            if e_html:
+                htmls.append('data/'+e_html['filename'])
+        except:
+            print(i)
     utils.write_json(htmls,FILE_PATH+'/index_extract_html.json')
 
 def parse_args():
