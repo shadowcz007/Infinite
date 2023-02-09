@@ -181,7 +181,7 @@ def get_keyword(keyword='web3',page=None):
     
     items={}
 
-    for i in range(2):
+    for i in range(1):
         page.wait_for_timeout(800)
         page.mouse.wheel(0, 1000)
         page.wait_for_timeout(990)

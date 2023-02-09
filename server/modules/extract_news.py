@@ -41,6 +41,7 @@ ie = Taskflow('information_extraction', schema=schema_zh)
 
 
 def create_html(data):
+    # '''+( '''<img src="'''+data['imgurl']+'''" style="width: 140px;height: fit-content;"/>''' if data['imgurl'] else '')+'''
     html='''<div score="'''+str(data['score'])+'''" class="score" style="display: flex;
                 flex-direction: column;
                 outline: 1px solid gray;
@@ -49,7 +50,7 @@ def create_html(data):
                 font-size: 18px;
                 font-weight: 800;
                 color: black;">'''+data['title']+''' <br>
-                '''+( '''<img src="'''+data['imgurl']+'''" style="width: 140px;height: fit-content;"/>''' if data['imgurl'] else '')+'''
+                
                 <p style="background: yellow;
                 display: block;
                 width: fit-content;
@@ -524,12 +525,9 @@ def update_index():
     #html
     htmls=[]
     for i in range(-7,1):
-        try:
-            e_html=utils.read_dir_extract_html_byday(FILE_PATH,i)
-            if e_html:
-                htmls.append('data/'+e_html['filename'])
-        except:
-            print(i)
+        e_html=utils.read_dir_extract_html_byday(FILE_PATH,i)
+        if e_html:
+            htmls.append('data/'+e_html['filename'])
     utils.write_json(htmls,FILE_PATH+'/index_extract_html.json')
 
 def parse_args():
